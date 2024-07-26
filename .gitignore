@@ -17,3 +17,5 @@ config/*.env
 # Ignore all log files except app.log
 *.log
 !app.log
+.Rproj.user
+inst/doc
