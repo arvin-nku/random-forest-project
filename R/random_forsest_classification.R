@@ -216,7 +216,14 @@ random_forest_regression <- function(data, B, A = NULL, m = 0, num_leaf = NULL,
 #' @return a list of trees `B` 
 #' @export
 #' 
-#' @examples    
+#' @examples
+#' 
+#' 
+#' 
+#' 
+#' 
+#' 
+#'     
 random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NULL, 
                                          depth = NULL, num_split = 2, min_num = 1, 
                                          unique = F ){
@@ -383,5 +390,102 @@ random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NU
 #'
 #' Random Forest Algorithm for either regression or classification
 #'
+#' @param x column name or list of column names of the input variable(s) 
+#' @param y column/list name of the target variable \cr
+#' one dimensional vector
+#' @param type “reg” for regression tree\cr
+#' “cla” for classification tree\cr 
+#' if `type` is missing, the function tries to guess the correct type#
+#' @param data named list or tibble containing the combined data of x and y
+#' @param B number of bootstrap samples to be created
+#' @param A sample size to be used\cr
+#' must be greater than 0 and less than or equal to the number of observations\cr
+#' the default value corresponds to the total size of data
+#' @param m positive number of coordinates used in each iteration\cr
+#' the default value is the dimension of the data
+#' @param num_leaf Termination condition: The tree has `num_leaf` leaves.\cr
+#' Must be greater than or equal to 1\cr
+#' The default value is the number of data-points
+#' @param depth Termination condition: The tree has depth `depth`\cr
+#' The default value is the maximum achievable depth
+#' @param num_split only split nodes that contain at least `num_split` elements\cr
+#' must be greater than or equal to 2
+#' @param min_num only divides a nod if both child nodes at least `min_num` elements\cr
+#' must be greater than or equal to 1  
+#' @param unique if `unique`is set to TRUE, nodes where all data points in this node have the the class are not split\cr
+#' The default value is FALSE
 #' 
-#'  
+#' @return a list of `B` trees
+#' 
+#' @export
+#' 
+#' @examples 
+#' 
+#' 
+#' 
+random_forest <- function(x, y, data, type = NULL, B, A = NULL, m = 0,num_leaf = NULL, 
+                          depth = NULL, num_split = 2, min_num = 1, unique = F ){
+  
+  #check that x and y is extracted correctly from data
+  x1 <- enquo(x)
+  y1 <- enquo(y)
+  
+  data_x <- eval_tidy(x1, data)
+  data_y <- eval_tidy(y1, data)
+  
+  #verification of the input
+  
+  ##x
+  if(!is.numeric(data_x)){
+    stop("The data of x must be numeric")
+  }
+  
+  ##y
+  if(!is.numeric(data_y)){
+    stop("The data of y must be numeric")
+  }
+  if(!NCOL(data_y) == 1){
+    stop("The dimension of y must be 1")
+  }
+  
+  ##combination of x and y is permitted
+  if(!(as.integer((length(data_x)/length(data_y)))*length(data_y) == length(data_x))){
+    stop("The length of x and y is not compatible")
+  }
+  
+  #rest of verification is in random_forest_regression/classification
+  
+  #bringing data into the right form
+  nrow_x <- length(data_x)/length(data_y)
+  mat_x <- matrix(data_x, nrow = nrow_x, byrow = T)
+  data_x_y <- list(x = mat_x, y = data_y)
+  
+  #try to guess the type if type == NULL
+  if(is.null(type)){
+    y_int <- as.integer(data_y)
+    if(all(y_int == data_y) & all(y_int >= 1)){
+      warning("Type was forgotten to specify and was automatically set to classification")
+      type <- "cla"
+    }
+    else{
+      warning("Type was forgotten to specify and was automatically set to regression")
+      type <- "reg"
+    }
+  }
+  
+  if(type == "reg"){
+    return(random_forest_regression(data = data_x_y, B = B, A = A, m = m,
+                                    num_leaf = num_leaf, depth = depth,
+                                    num_split = num_split, min_num = min_num))
+  }
+  if(type == "cla"){
+    return(random_forest_classification(data = data_x_y, B = B, A = A, m = m,
+                                        num_leaf = num_leaf, depth = depth,
+                                        num_split = num_split, min_num = min_num,
+                                        unique = unique))
+  }
+  else{
+    stop("Invalid type: The type must be reg for regression or cla for classification")
+  }
+}
+
