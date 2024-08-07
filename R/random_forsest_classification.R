@@ -26,13 +26,16 @@
 #' @return a list of trees `B` 
 #' @export
 #' 
-#' @examples 
-#' 
-#'
-#' 
-#' 
-#' 
-#'
+#' @examples
+#' X1 <- runif(100, 0, 1)
+#' X2 <- runif(100, 0, 1)
+#' X3 <- runif(100, 0, 1)
+#' X4 <- runif(100, 0, 1)
+#' Y <- 2 * X1 + 3 * X2 + 3 * X3 + 4 * X4
+#' data <- list(x = matrix(c(X1, X2, X3, X4), nrow = 4, byrow = TRUE), y = Y)
+#' random_forest_regression(data, B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1)
+
+
 random_forest_regression <- function(data, B, A = NULL, m = 0, num_leaf = NULL,
                                      depth = NULL, num_split = 2, min_num = 1){
   ##Verification of the input 
@@ -44,6 +47,9 @@ random_forest_regression <- function(data, B, A = NULL, m = 0, num_leaf = NULL,
   len <- length(data$y)
   
   ##data
+  if(!is.list(data)){
+    stop("data must be a list")
+  }
   if(n != len){
     stop("Dimension of x and y in data are not equal")
     #stop oder warning?
@@ -109,8 +115,8 @@ random_forest_regression <- function(data, B, A = NULL, m = 0, num_leaf = NULL,
     num_leaf <- len
   }
   
-  ##depth (hier nur gültge Eingabe genauer Wert dann in greedy_algo bzw default wert
-  # das keine Fehlermeldung)
+  ##depth (here only valid input exact value then in greedy_algo or default value
+  # that no error message is received)
   if(!is.null(depth)){
     if(as.integer(depth) != depth){
       warning("depth is not an integer. The value of depth is set to ", trunc(depth))
@@ -217,13 +223,15 @@ random_forest_regression <- function(data, B, A = NULL, m = 0, num_leaf = NULL,
 #' @export
 #' 
 #' @examples
-#' 
-#' 
-#' 
-#' 
-#' 
-#' 
-#'     
+#' X1 <- runif(100, 0, 1)
+#' X2 <- runif(100, 0, 1)
+#' X3 <- runif(100, 0, 1)
+#' X4 <- runif(100, 0, 1)
+#' Y <- ifelse(2 * X1 + 3 * X2 + 3 * X3 + 4 * X4 > 2.5, 1, 2)
+#' data <- list(x = matrix(c(X1, X2, X3, X4), nrow = 4, byrow = TRUE), y = Y)
+#' random_forest_classification(data, B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+
+
 random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NULL, 
                                          depth = NULL, num_split = 2, min_num = 1, 
                                          unique = F ){
@@ -237,9 +245,11 @@ random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NU
   len <- length(data$y)
   
   ##data
+  if(!is.list(data)){
+    stop("data must be a list")
+  }
   if(n != len){
     stop("Dimension of x and y in data are not equal")
-    #stop oder warning?
   }
   
   ##B
@@ -420,9 +430,24 @@ random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NU
 #' @export
 #' 
 #' @examples 
-#' 
-#' 
-#' 
+#' X1 <- runif(100, 0, 1)
+#' X2 <- runif(100, 0, 1)
+#' X3 <- runif(100, 0, 1)
+#' X4 <- runif(100, 0, 1)
+#' Y <-  X1 + X2 + X3 + X4
+#' data_reg <- tibble(a = X1, b = X2, c = X3, d = X4, y = Y)
+#' random_forest(x = c(a, b, c, d), y = Y, data = data_reg, type = "reg", B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+#'
+#'
+#' X1 <- runif(100, 0, 1)
+#' X2 <- runif(100, 0, 1)
+#' X3 <- runif(100, 0, 1)
+#' X4 <- runif(100, 0, 1)
+#' Y <- ifelse(X1 + X2 + X3 + X4 > 2.5, 1, 2)
+#' data_cla <- list(a = X1, b = X2, c = X3, d = X4, y = Y)
+#' random_forest(x = c(a, b, c, d), y = Y, data = data_cla, type = "cla", B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+
+
 random_forest <- function(x, y, data, type = NULL, B, A = NULL, m = 0,num_leaf = NULL, 
                           depth = NULL, num_split = 2, min_num = 1, unique = F ){
   
@@ -451,6 +476,11 @@ random_forest <- function(x, y, data, type = NULL, B, A = NULL, m = 0,num_leaf =
   ##combination of x and y is permitted
   if(!(as.integer((length(data_x)/length(data_y)))*length(data_y) == length(data_x))){
     stop("The length of x and y is not compatible")
+  }
+  
+  ##class of data correct
+  if(!is.list(data)){
+    stop("data must be a list")
   }
   
   #rest of verification is in random_forest_regression/classification
@@ -488,4 +518,3 @@ random_forest <- function(x, y, data, type = NULL, B, A = NULL, m = 0,num_leaf =
     stop("Invalid type: The type must be reg for regression or cla for classification")
   }
 }
-
