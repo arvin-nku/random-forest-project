@@ -1,0 +1,73 @@
+if (!require(randomForest)) install.packages("randomForest")
+if (!require(ggplot2)) install.packages("ggplot2")
+if (!require(cowplot)) install.packages("cowplot")
+
+library(randomForest)
+library(ggplot2)
+library(cowplot)
+
+bootstrap_sample <- function(X, Y) { 
+  n <- nrow(X)
+  sample_indices <- sample(1:n, n, replace = TRUE)
+  return(list("X" = X[sample_indices, ], "Y" = Y[sample_indices]))
+}
+
+bagging_classification <- function(X, Y, B = 100) {
+  models <- list()
+  for (b in 1:B) {
+    sample_data <- bootstrap_sample(X, Y)
+    X_boot = sample_data$X
+    Y_boot = sample_data$Y
+    
+    models[[b]] <- randomForest(X_boot, Y_boot, ntree = 1)
+  }
+  
+  return (models)
+}
+
+bagging_prediction <- function(models, X, class_count) 
+{
+  B <- length(models)
+  n <- nrow(X)
+  K <- class_count
+  
+  prob_matrix <- matrix(0, n, K)
+  
+  for (i in 1:B)
+  {
+    prob_matrix <- prob_matrix + predict(models[[i]], X, type = "prob")
+  }
+  
+  prob_matrix <- prob_matrix / B
+  bagged_predictions <- apply(prob_matrix, 1, which.max)
+  
+  return(bagged_predictions)
+}
+
+
+plot_decision_boundary <- function(data, models, class_count, title) {
+  x_seq <- seq(0, 1, length.out = 100)
+  grid <- expand.grid(x1 = x_seq, x2 = x_seq)
+  grid$y <- bagging_prediction(models, grid, class_count)
+  
+  ggplot(data, aes(x = x1, y = x2, color = y)) +
+    geom_point() +
+    geom_contour(data = grid, aes(z = as.numeric(y)), breaks = c(1.5), col = "black") +
+    ggtitle(title) +
+    theme_minimal()
+}
+
+set.seed(123)
+n <- 400
+x1 <- runif(n, 0, 1)
+x2 <- runif(n, 0, 1)
+y <- ifelse(sin(2 * pi * x1) + rnorm(n, 0, 0.1) > x2, 1, 2)
+data <- data.frame(x1 = x1, x2 = x2, y = as.factor(y))
+X = data[, !names(data) %in% "y"]
+Y = data$y
+models <- bagging_training(X, Y, B = 1000)
+plot1 <- plot_decision_boundary(data, models, length(unique(Y)), "Bagging classification with 1000 trees")
+
+one_tree <- bagging_training(X, Y, B = 1)
+plot2 <- plot_decision_boundary(data, one_tree, length(unique(Y)), "Bagging classification with 1 tree")
+plot_grid(plot1, plot2, ncol = 1)
