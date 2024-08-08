@@ -1,0 +1,59 @@
+if (!require(randomForest)) install.packages("randomForest")
+library(randomForest)
+
+bootstrap_sample <- function(X, Y) { 
+  n <- nrow(X)
+  sample_indices <- sample(1:n, n, replace = TRUE)
+  return(list("X" = X[sample_indices, ], "Y" = Y[sample_indices]))
+}
+
+bagging_regression <- function(X, Y, B = 100) {
+  models <- list()
+  
+  for (i in 1:B) { 
+    sample_data <- bootstrap_sample(X, Y)
+    X_boot = sample_data$X
+    Y_boot = sample_data$Y
+    model <- randomForest(X_boot, Y_boot, ntree = 1) 
+    models[[i]] <- model
+  }
+  
+  return(models)
+}
+
+bagging_prediction <- function(models, X) 
+{
+  preds<-sapply(models, function(model) {
+    predict(model, newdata = X, type = "response")
+  })
+  
+  return(rowMeans(preds))
+}
+
+set.seed(123)
+n <- 200
+x <- runif(n, 0, 1)
+x1 <- x
+y <- sin(2 * pi * x) + rnorm(n, 0, 0.1)
+data <- data.frame(x = x, y = y, tmp = x1)
+
+X = data[, !names(data) %in% "y"]
+Y = data$y
+par(mfrow = c(2, 2))
+print(X)
+single_model <- bagging_regression(X, Y, B = 1)
+pred_single <- bagging_prediction(single_model, X)
+plot(data$x, data$y, pch = 21, bg = 'lightgrey', main = "Bagging regression with 1 tree", xlab = "x1", ylab = "y")
+lines(sort(data$x), pred_single[order(data$x)], col = 'blue')
+lines(sort(data$x), sin(2 * pi * sort(data$x)), col = 'red')
+
+
+
+models <- bagging_regression(X, Y, B = 1000)
+pred_bagging <- bagging_prediction(models, X)
+plot(data$x, data$y, pch = 21, bg = 'lightgrey', main = "Bagging regression with 1000 trees", xlab = "x1", ylab = "y")
+lines(sort(data$x), pred_bagging[order(data$x)], col = 'blue')
+lines(sort(data$x), sin(2 * pi * sort(data$x)), col = 'red')
+
+
+par(mfrow = c(1, 1))
