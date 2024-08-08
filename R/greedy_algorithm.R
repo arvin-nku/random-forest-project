@@ -31,7 +31,7 @@ greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_spli
     left_indices <- which(data$x[, best_split$split_index] <= best_split$split_point)
     right_indices <- which(data$x[, best_split$split_index] > best_split$split_point)
     
-    # Abbruchbedingung: Keine ausreichende Datenpunkte in den Kindknoten
+    # Abbruchbedingung: Keine ausreichenden Datenpunkte in den Kindknoten
     if (length(left_indices) < min_num || length(right_indices) < min_num) {
       return(list(prediction = mean(data$y)))
     }
@@ -44,7 +44,8 @@ greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_spli
       split_index = best_split$split_index,
       split_point = best_split$split_point,
       left = split_node(left_data, if (is.null(depth)) NULL else depth - 1),
-      right = split_node(right_data, if (is.null(depth)) NULL else depth - 1)
+      right = split_node(right_data, if (is.null(depth)) NULL else depth - 1),
+      value = best_split$split_point  # Ensure the split value is stored here
     ))
   }
   
@@ -120,7 +121,7 @@ greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_
     left_indices <- which(data$x[, best_split$split_index] <= best_split$split_point)
     right_indices <- which(data$x[, best_split$split_index] > best_split$split_point)
     
-    # Abbruchbedingung: Keine ausreichende Datenpunkte in den Kindknoten
+    # Abbruchbedingung: Keine ausreichenden Datenpunkte in den Kindknoten
     if (length(left_indices) < min_num || length(right_indices) < min_num) {
       return(list(prediction = Mode(data$y)))
     }
@@ -133,7 +134,8 @@ greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_
       split_index = best_split$split_index,
       split_point = best_split$split_point,
       left = split_node(left_data, if (is.null(depth)) NULL else depth - 1),
-      right = split_node(right_data, if (is.null(depth)) NULL else depth - 1)
+      right = split_node(right_data, if (is.null(depth)) NULL else depth - 1),
+      value = best_split$split_point  # Ensure the split value is stored here
     ))
   }
   
