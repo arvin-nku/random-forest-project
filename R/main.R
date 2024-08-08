@@ -3,8 +3,8 @@ library(rlang)
 
 #' Prediction of datapoint or a set of data points in a tree or a set of trees
 #'
-#' @param list_tree a list containing an arbitrary number greater or equal to 1 of trees in tibble form
-#' \cr as used by `greedy_cart()`, `bagging()` or `random_forest()`´
+#' @param list_tree a list containing an arbitrary number greater or equal to 1 of trees in tibble form\cr 
+#' as used by `greedy_cart()`, `bagging()` or `random_forest()`
 #' @param list_x a matrix of values to be predicted, where each column corresponds to a datapoint \cr
 #' the number of rows corresponds to the dimension of the x-values in the list/matrix
 #' @param type “reg” for regression tree\cr
