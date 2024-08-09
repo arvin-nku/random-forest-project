@@ -19,7 +19,7 @@ library(rlang)
 #' Y <- X1^2 + X2 + e
 #' data_reg <- tibble(a = X1, b = X2, y = Y) 
 #' list_tree <- random_forest(x = X, y = Y, data = data_reg, type = "reg", B = 5)
-#' list_x <- matrix(c(0.1, 0.3, 0.5, 0.7, 0.8, 0.9), ncol = 3)
+#' list_x <- matrix(c(0.1, 0.3, 0.5, 0.7, 0.8, 0.9), ncol = 6)
 #' predictions <- prediction(list_tree, list_x, type = "reg")
 
 
@@ -39,7 +39,7 @@ prediction <- function(list_tree, list_x, type = NULL){
     stop("The type is not set! Set the type reg for regression or cla for classification.")
   }
   
-  if(length(list_tree[[1]]$A[[1]][[1]]) != nrow(list_x)){
+  if(length(list_tree[[1]][[1]][[1]]) != nrow(list_x)){
     stop("The dimension of list_tree is not equal to the dimension of list_x")
   }
 
@@ -89,7 +89,7 @@ prediction <- function(list_tree, list_x, type = NULL){
     }
     
     # Return the prediction value of the leaf node
-    return(tree$c_value[tree$node == node_cur])
+    return(tree$value[tree$node == node_cur])
   }
   
   #predict a single value using all trees
@@ -99,7 +99,8 @@ prediction <- function(list_tree, list_x, type = NULL){
     
     #compute the final value based on the type
     if (type == "reg") {
-      return(mean(y_list))
+      print(y_list)
+      return(mean(y_list, na.rm = TRUE))
     }
     if (type == "class") {
       return(as.integer(tail(names(sort(table(y_list))), 1)))
@@ -111,3 +112,11 @@ prediction <- function(list_tree, list_x, type = NULL){
   
   return(y_p)
 }
+X1 <- runif(100, 0, 1)
+X2 <- runif(100, 0, 1)
+e <- rnorm(50, 0, 0.1)
+Y <- X1^2 + X2 + e
+data_reg <- tibble(a = X1, b = X2, y = Y) 
+list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg, type = "reg", B = 5, A = 50, m = 1)
+list_x <- matrix(c(0.1, 0.3, 0.5, 0.7, 0.8, 0.9), ncol = 6)
+predictions <- prediction(list_tree, list_x, type = "reg")

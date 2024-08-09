@@ -54,14 +54,14 @@ There are 3 different functions for creating decision trees. All are based on th
 - `random_forest()` is an extension of bagging where, in addition to the bootstrapping datasets, only a random subset of the predictors at each node of the decision tree is considered. This reduces the correlation between the trees, resulting in a more robust and accurate model.
 
 To estimate a value or the decision rule, you can use the following function
-- `prediction`
+- `prediction()`
 
-????
+
 ### Functions to visualize a decision tree
 -
 - ???MACHEN WIR DAS NOCH ODER NICHT???
 -
-????
+
 
 ### Create a tree with `greedy_cart()`
 
@@ -69,9 +69,7 @@ To estimate a value or the decision rule, you can use the following function
 
 
 ```{r}
-!!!HIER DIE IMPLEMENTIERUNG CHECKEN!!!
-data <- greedy_cart(x = x, y = y, data = data_reg, type = "reg")
-!!!
+data <- greedy_cart_regression(data = data_reg)
 ```
 `data` parameter specifies the environment that contains the necessary data.
 `data$tree` is the result of the decision tree generation. It saves the structure of the decision tree, including the nodes and splits that were determined during training.
@@ -141,7 +139,8 @@ Analogous to the algorithm for the regression case in the greedy_cart method, th
 NOTATION!!!
 greedy_cart(x = c(x1,x2), y = y, data = data_class, type = "class", unique = FALSE)
 ```
-!!!Abschnitt NEU CODE HIER WIRD NOCH VERÄNDERT!!!
+
+Abschnitt NEU CODE HIER WIRD NOCH VERÄNDERT!!!
 ### Create trees with `bagging()`
 
 `bagging()` is an extension of greedy_cart() that uses bootstrap aggregation to create multiple training trees in order to achieve greater accuracy by aggregating their predictions. Each time the function is called,`B`different trees are created based on different bootstrap samples.
@@ -154,7 +153,7 @@ bagging_regression <- function(X, Y, B = 100)
 
 
 
-!!!!HIER NOCH DER ALGORITHMUS MIT MAJOR VOTE!!!!!
+HIER NOCH DER ALGORITHMUS MIT MAJOR VOTE!!!!!
 
 
 
@@ -164,7 +163,7 @@ This works analogously for the classification case with:
 bagging_classification <- function(X, Y, B = 100)
 ```
 
-!!!BIS HIER!!!
+BIS HIER!!!
 
 
 ### Create trees with `random_forest()`
