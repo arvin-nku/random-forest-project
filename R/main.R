@@ -12,8 +12,16 @@ library(rlang)
 #' 
 #' @return 
 #' @export
-#' @example 
-#' 
+#' @example
+#' X1 <- runif(100, 0, 1)
+#' X2 <- runif(100, 0, 1)
+#' e <- rnorm(50, 0, 0.1)
+#' Y <- X1^2 + X2 + e
+#' data_reg <- tibble(a = X1, b = X2, y = Y) 
+#' list_tree <- random_forest(x = X, y = Y, data = data_reg, type = "reg", B = 5)
+#' list_x <- matrix(c(0.1, 0.3, 0.5, 0.7, 0.8, 0.9), ncol = 3)
+#' predictions <- prediction(list_tree, list_x, type = "reg")
+
 
 prediction <- function(list_tree, list_x, type = NULL){
   
@@ -98,8 +106,8 @@ prediction <- function(list_tree, list_x, type = NULL){
     }
   }
   
-  #predictions for all columns in list_xt
-  y_s <- sapply(1:ncol(list_x), function(j) predict_single_value(list_x[,j], list_tree, type))
+  #predictions for all columns in list_x
+  y_p <- sapply(1:ncol(list_x), function(j) predict_single_value(list_x[,j], list_tree, type))
   
-  return(y_s)
+  return(y_p)
 }

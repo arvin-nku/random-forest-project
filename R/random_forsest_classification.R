@@ -33,7 +33,7 @@
 #' X4 <- runif(100, 0, 1)
 #' Y <- 2 * X1 + 3 * X2 + 3 * X3 + 4 * X4
 #' data <- list(x = matrix(c(X1, X2, X3, X4), nrow = 4, byrow = TRUE), y = Y)
-#' random_forest_regression(data, B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1)
+#' random_forest_regression(data, B = 10, A = 20, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1)
 
 
 random_forest_regression <- function(data, B, A = NULL, m = 0, num_leaf = NULL,
@@ -218,7 +218,7 @@ random_forest_regression <- function(data, B, A = NULL, m = 0, num_leaf = NULL,
 #' X4 <- runif(100, 0, 1)
 #' Y <- ifelse(2 * X1 + 3 * X2 + 3 * X3 + 4 * X4 > 2.5, 1, 2)
 #' data <- list(x = matrix(c(X1, X2, X3, X4), nrow = 4, byrow = TRUE), y = Y)
-#' random_forest_classification(data, B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+#' random_forest_classification(data, B = 10, A = 20, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
 
 
 random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NULL, 
@@ -413,9 +413,10 @@ random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NU
 #' X2 <- runif(100, 0, 1)
 #' X3 <- runif(100, 0, 1)
 #' X4 <- runif(100, 0, 1)
-#' Y <-  X1 + X2 + X3 + X4
+#' e <- rnorm(50, 0, 0.1)
+#' Y <-  X1 + X2 + X3 + X4 + e
 #' data_reg <- tibble(a = X1, b = X2, c = X3, d = X4, y = Y)
-#' random_forest(x = c(a, b, c, d), y = Y, data = data_reg, type = "reg", B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+#' random_forest(x = c(a, b, c, d), y = Y, data = data_reg, type = "reg", B = 10, A = 20, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
 #'
 #'
 #' X1 <- runif(100, 0, 1)
@@ -424,7 +425,7 @@ random_forest_classification <- function(data, B, A = NULL, m = 0, num_leaf = NU
 #' X4 <- runif(100, 0, 1)
 #' Y <- ifelse(X1 + X2 + X3 + X4 > 2.5, 1, 2)
 #' data_cla <- list(a = X1, b = X2, c = X3, d = X4, y = Y)
-#' random_forest(x = c(a, b, c, d), y = Y, data = data_cla, type = "cla", B = 10, A = 20, m = 3, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+#' random_forest(x = c(a, b, c, d), y = Y, data = data_cla, type = "cla", B = 10, A = 20, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
 
 
 random_forest <- function(x, y, data, type = NULL, B, A = NULL, m = 0,num_leaf = NULL, 
