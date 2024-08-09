@@ -39,28 +39,25 @@ prediction <- function(list_tree, list_x, type = NULL){
     stop("The type is not set! Set the type reg for regression or cla for classification.")
   }
   
-  if(length(list_tree[[1]][[1]][[1]]) != nrow(list_x)){
+  if(length(list_tree[[1]]$A[[1]][[1]]) != nrow(list_x)){
     stop("The dimension of list_tree is not equal to the dimension of list_x")
   }
 
   #helpfunctions
   #no leaf-node
   no_leaf <- function(tree, node_number){
-    node_number_tree <- tree$A[tree$node == node_number]
-    if(length(node_number_tree[[1]]) > 1){
+    node_data <- tree[tree$node == node_number, ]
+    if(!is.null(node_data$split_index)){
       return(T)
     }
-    return(F)
+    else{
+      return(F)
+    }
   }
   
   #node exists
   exists_node <- function(tree, node_number){
-    for(i in 1:length(tree$node)){
-      if(node_number == tree$node[[i]]){
-        return(T)
-      }
-    }
-    return(F)
+    return(any(tree$node == node_number))
   }
   
   #predictions with a tree
@@ -71,52 +68,61 @@ prediction <- function(list_tree, list_x, type = NULL){
     #find leaf node
     while(no_leaf(tree, node_cur)){
       #left and right child nodes
-      left_node <- node_cur * 2
-      right_node <- node_cur * 2 + 1
-      
+      node_left <- node_cur*2 
+      node_right <- (node_cur*2) + 1
       #node has a left child
-      if(exists_node(tree, left_node)){
-        dim_cur <- tree$split_index[tree$node == left_node]
-        if(x[dim_cur] < tree$split_point[tree$node == left_node]){
-          node_cur <- left_node  #move to the left child
+      if(exists_node(tree, node_cur *2)){
+        dim_cur <- tree$split_index[tree$node == node_cur*2]
+        #take the first not NA value if the fisrt is NA
+        #if(is.na(dim_cur)){
+          #dim_cur <- tree$split_index[!is.na(tree$split_index)][1]
+        #}
+        if(x[dim_cur] < tree$split_point[tree$node == node_cur*2]){
+          node_new <- (tree$node[tree$node == node_cur])*2
+          node_cur <- tree$node[tree$node == node_new]  #move to the left child
         } else {
-          node_cur <- right_node  #move to the right child
+          node_new <-((tree$node[tree$node == node_cur])*2)+1
+          node_cur <- tree$node[tree$node == node_new]  #move to the right child
         }
-      } else {
-        #break if there is no child
-        break
+      }
+      else if(exists_node(tree, (node_cur *2)+1)){
+        dim_cur <- tree$split_index[tree$node == (node_cur*2)+1]
+        
+      if(x[dim_cur] < tree$split_point[tree$node == (node_cur*2)+1]){
+        node_new <- (tree$node[tree$node == node_cur])*2
+        node_cur <- tree$node[tree$node == node_new]
+      }
+      else{
+        node_new <- ((tree$node[tree$node == node_cur])*2)+1
+        node_cur <- tree$node[tree$node == node_new]
       }
     }
-    
+  }
     # Return the prediction value of the leaf node
-    return(tree$value[tree$node == node_cur])
+    return(tree$c_value[tree$node == node_cur])
   }
   
-  #predict a single value using all trees
-  predict_single_value <- function(x_col, list_tree, type) {
-    #predictions for the current column
-    y_list <- sapply(list_tree, function(tree) pred(tree, x_col))
+  y_p <- c()
+  for (j in 1:ncol(list_x)) {
+    y_list <- c()
+    for(i in 1:length(list_tree)){
+      y_list <- append(y_list, pred(list_tree[[i]], list_x[,j]))
+    }
     
-    #compute the final value based on the type
-    if (type == "reg") {
-      print(y_list)
-      return(mean(y_list, na.rm = TRUE))
+    if(type == "reg"){
+      y_p <- append(y_p, mean(y_list))
     }
-    if (type == "class") {
-      return(as.integer(tail(names(sort(table(y_list))), 1)))
+    else if(type == "cla"){
+      y_p <- append(y_p, as.integer(tail(names(sort(table(y_list))), 1)))
     }
   }
-  
-  #predictions for all columns in list_x
-  y_p <- sapply(1:ncol(list_x), function(j) predict_single_value(list_x[,j], list_tree, type))
-  
   return(y_p)
 }
 X1 <- runif(100, 0, 1)
 X2 <- runif(100, 0, 1)
 e <- rnorm(50, 0, 0.1)
 Y <- X1^2 + X2 + e
-data_reg <- tibble(a = X1, b = X2, y = Y) 
-list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg, type = "reg", B = 5, A = 50, m = 1)
-list_x <- matrix(c(0.1, 0.3, 0.5, 0.7, 0.8, 0.9), ncol = 6)
+data_reg_li <- list(a = X1, b=X2, y= Y)
+list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg_li, type = "reg", B = 5, A = 10, m = 1)
+list_x <- matrix(c(0, 0, 17, 17, 1.8, 2.9, 23, 12), nrow = 2)
 predictions <- prediction(list_tree, list_x, type = "reg")
