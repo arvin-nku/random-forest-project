@@ -136,7 +136,7 @@ X1 <- runif(100, 0, 1)
 X2 <- runif(100, 0, 1)
 e <- rnorm(100, 0, 0.1)
 linear_comb <- 1.8 * X1 + 0.3 * X2 + e
-Y_cla <- ifelse(linear_comb > 1.1, 1, 2)
+Y_cla <- ifelse(linear_comb > 1, 1, 2)
 data_cla_li <- list(x = matrix(c(X1, X2), nrow = 2, byrow = TRUE), y = Y_cla)
 list_tree_cl <- random_forest(x = c(X1,X2), y = Y_cla, data = data_cla_li, type = "cla", B =5, A = 10, m=1)
 list_x_cla <- matrix(c(0, 0, 0, 17, 1.8, 2.9, 0.2, 0.42), nrow = 2)
