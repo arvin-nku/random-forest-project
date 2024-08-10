@@ -15,11 +15,11 @@ library(rlang)
 #' @example
 #' X1 <- runif(100, 0, 1)
 #' X2 <- runif(100, 0, 1)
-#' e <- rnorm(50, 0, 0.1)
+#' e <- rnorm(100, 0, 0.1)
 #' Y <- X1^2 + X2 + e
-#' data_reg <- tibble(a = X1, b = X2, y = Y) 
-#' list_tree <- random_forest(x = X, y = Y, data = data_reg, type = "reg", B = 5)
-#' list_x <- matrix(c(0.1, 0.3, 0.5, 0.7, 0.8, 0.9), ncol = 6)
+#' data_reg_li <- list(a = X1, b=X2, y= Y)
+#' list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg_li, type = "reg", B = 5, A = 10, m = 1)
+#' list_x <- matrix(c(0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.9, 1), nrow = 2)
 #' predictions <- prediction(list_tree, list_x, type = "reg")
 
 
@@ -125,11 +125,19 @@ prediction <- function(list_tree, list_x, type = NULL){
 }
 X1 <- runif(100, 0, 1)
 X2 <- runif(100, 0, 1)
-e <- rnorm(50, 0, 0.1)
+e <- rnorm(100, 0, 0.1)
 Y <- X1^2 + X2 + e
 data_reg_li <- list(a = X1, b=X2, y= Y)
 list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg_li, type = "reg", B = 5, A = 10, m = 1)
-list_x <- matrix(c(0, 0, 0, 17, 1.8, 2.9, 0.2, 0.42), nrow = 2)
+list_x <- matrix(c(0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.9, 1), nrow = 2)
 predictions3 <- prediction(list_tree, list_x, type = "reg")
 
-
+X1 <- runif(100, 0, 1)
+X2 <- runif(100, 0, 1)
+e <- rnorm(100, 0, 0.1)
+linear_comb <- 1.8 * X1 + 0.3 * X2 + e
+Y_cla <- ifelse(linear_comb > 1.1, 1, 2)
+data_cla_li <- list(x = matrix(c(X1, X2), nrow = 2, byrow = TRUE), y = Y_cla)
+list_tree_cl <- random_forest(x = c(X1,X2), y = Y_cla, data = data_cla_li, type = "cla", B =5, A = 10, m=1)
+list_x_cla <- matrix(c(0, 0, 0, 17, 1.8, 2.9, 0.2, 0.42), nrow = 2)
+predictions4 <- prediction(list_tree_cl, list_x_cla)
