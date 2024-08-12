@@ -1,23 +1,12 @@
-#help function
-
-update_split <- function(data){
-  for (i in 1:nrow(data$tree)) {
-    node_cur <- data$tree[i, ]
-    child_l <- data$tree %>% filter(node == node_cur$node * 2)
-    
-    if(nrow(child_l) > 0){
-      data$tree[i, ]$split_point <- child_l$split_point
-      data$tree[i, ]$split_index <- child_l$split_index
-    }
-  }
-  data$tree[data$tree$name == "leaf", ]$split_point <- NA
-  data$tree[data$tree$name == "leaf", ]$split_index <- NA
-  
-  return(data)
-}
+library(data.tree)
+library(dplyr)
+library(DiagrammeR)
 
 tree_plot <- function(data){
-  data <- update_split(data)
+  if (!"split_point" %in% colnames(data$tree) || !"split_index" %in% colnames(data$tree)) {
+    warning("split_point oder split_index fehlen in den Daten.")
+    return(NULL)
+  }
   
   parent <- c()
   child <- c()
@@ -59,17 +48,14 @@ tree_plot <- function(data){
   
   tree_data <- data.frame(parent = parent, child = child)
   tree <- data.tree::FromDataFrameNetwork(tree_data)
-  data.tree::SetGraphStyle(tree, rankdir = "TB")
-  data.tree::SetEdgeStyle(tree, arrowhead="normal", arrowsize=0.3)
-  data.tree::SetNodeStyle(tree, style = "box", shape = "box", height=0.05, fontsize=8)
+  #set graphic
+  SetGraphStyle(tree, rankdir = "TB")
+  SetEdgeStyle(tree, arrowhead = "vee", arrowsize = 0.5, color = "black")
+  SetNodeStyle(tree, style = "filled",fillcolor = "#E0E0E0", shape = "box", height = 0.1, fontsize = 10)
+  
   plot(tree)
 }
 
-install.packages("data.tree")
-install.packages("DiagrammeR")
-library(data.tree)
-library(dplyr)
-library(DiagrammeR)
 tree_plot(val)
 
 tree_plot_random_forest <- function(data) {
@@ -115,11 +101,11 @@ tree_plot_random_forest <- function(data) {
   tree_data <- data.frame(parent = parent, child = child)
   tree <- FromDataFrameNetwork(tree_data)
   
-  # Grafikoptionen setzen
+  #set graphic
   SetGraphStyle(tree, rankdir = "TB")
-  SetEdgeStyle(tree, arrowhead = "normal", arrowsize = 0.3)
-  SetNodeStyle(tree, style = "box", shape = "box", height = 0.05, fontsize = 8)
+  SetEdgeStyle(tree, arrowhead = "vee", arrowsize = 0.5, color = "black")
+  SetNodeStyle(tree, style = "filled",fillcolor = "#E0E0E0", shape = "box", height = 0.1, fontsize = 10)
   
-  # Plot erstellen
+  #greate plot
   plot(tree)
 }
