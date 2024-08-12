@@ -21,9 +21,8 @@
 #' @param num_split only split nodes that contain at least `num_split` elements\cr
 #' must be greater than or equal to 2
 #' @param min_num only divides a nod if both child nodes at least `min_num` elements\cr
-#' must be greater than or equal to 1
-#' 
-#' @return a list of trees `B` 
+#' must be greater than or equal to 1 
+#' @return a list of trees `B`
 #' @export
 #' 
 #' @examples
