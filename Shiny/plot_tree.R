@@ -56,8 +56,6 @@ tree_plot <- function(data){
   plot(tree)
 }
 
-tree_plot(val)
-
 tree_plot_random_forest <- function(data) {
   
   parent <- c()
