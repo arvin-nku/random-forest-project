@@ -8,10 +8,12 @@ Authors@R:
     person("Arvin", "Nikou", email = "arvin.nikou@example.com", role = c("cre", "aut")),
     person("Mikhail", "Volkov", email = "mikhail.volkov@example.com", role = c("cre", "aut"))
   )
-Description: Implements classification and regression using decision trees with a greedy CART algorithm. 
-  Provides methods for bagging and random forest techniques to improve model performance and robustness. 
-  Includes functions for predicting values based on trained trees and for visualizing individual decision trees. 
-  Ideal for users seeking to build and evaluate tree-based models with advanced ensemble methods.
+Description: Implements classification and regression using decision trees
+    with a greedy CART algorithm. Provides methods for bagging and random forest
+    techniques to improve model performance and robustness. Includes functions
+    for predicting values based on trained trees and for visualizing individual
+    decision trees. Ideal for users seeking to build and evaluate tree-based models
+    with advanced ensemble methods.
 Imports: 
   dplyr,
   tidyr,
