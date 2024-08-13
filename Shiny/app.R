@@ -90,6 +90,14 @@ server <- function(input, output) {
   
   observeEvent(input$predict, {
     
+    output$plot <- renderGrViz({
+      NULL
+    })
+    
+    output$prediction <- renderText({
+      NULL
+    })
+    
     #Input
     algo <- input$Algorithm
     type <- input$type
@@ -199,6 +207,15 @@ server <- function(input, output) {
   })
   
   observeEvent(input$plot, {
+    
+    output$plot <- renderGrViz({
+      NULL
+    })
+    
+    output$prediction <- renderText({
+      NULL
+    })
+    
     algo <- input$Algorithm
     type <- input$type
     num_leaf <- input$num_leaf
@@ -210,7 +227,7 @@ server <- function(input, output) {
     A <- input$A
     seed <- input$seed
     size <- input$size
-    tree_num <- as.integer(input$tree_num)  # Umwandlung zu Integer
+    tree_num <- as.integer(input$tree_num)
     
     if(tree_num > B){
       warning(paste("Chosen tree must be less or equal to", B, ". Tree is set to 1"))
@@ -219,7 +236,7 @@ server <- function(input, output) {
     
     # Caption for Output
     output$caption <- renderText({
-      "Plot"
+      "Plot:"
     })
     
     # Choose algorithm
