@@ -1,7 +1,7 @@
 #' Bagging regression
 #' This script implements a Bagging approach for regression 
 
-source("random_forsest_classification.R")
+source("random_forsest.R")
 source("main.R")
 
 # Function generates a bootstrap sample from the provided data. It randomly selects 
