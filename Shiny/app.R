@@ -43,7 +43,7 @@ ui <- fluidPage(
       wellPanel(
         h4("Settings for Algorithm"),
         numericInput("num_leaf", "Number of leaves:", value = 10, min = 1),
-        numericInput("depth", "Depth of the tree:", value = 5, min = 0),
+        numericInput("depth", "Depth of the tree:", value = 5, min = 1),
         numericInput("num_split", "Split nodes with at least elements:", value = 2, min = 2),
         numericInput("min_num", "Only splits nodes with at least child nodes:", value = 1, min = 1),
         numericInput("m", "Number of coordinates used in each iteration:", value = 1, min = 1),
@@ -64,7 +64,7 @@ ui <- fluidPage(
     width = 4,
     wellPanel(
       h4("Choose a tree"),
-      textInput("tree_num", "Which tree do you want to see (Baggin/Random Forest generate more than one tree):", value = "1")
+      textInput("tree_num", "Which tree do you want to see:", value = "1")
     )
   ),
   
@@ -74,6 +74,7 @@ ui <- fluidPage(
       width = 12,
       actionButton("predict", "Make a prediction", class = "btn-primary"),
       actionButton("plot", "Make a plot of a tree", class = "btn-primary"),
+      actionButton("bagging", "Show test for bagging", class = "btn-primary"),
     )
   ),
   
