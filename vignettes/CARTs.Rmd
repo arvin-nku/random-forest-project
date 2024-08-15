@@ -154,11 +154,7 @@ Abschnitt NEU CODE HIER WIRD NOCH VERÄNDERT (Mikhail)!!!
 bagging_regression <- function(X = data_reg_li$x, Y = data_reg_li$y, B = 100)
 ```
 
-
-
-
-HIER NOCH DER ALGORITHMUS MIT MAJOR VOTE!!!!!
-
+`bagging_classification()` uses bootstrap aggregation to create multiple training trees in order to achieve greater accuracy by aggregating their predictions with major vote method. Each time the function is called,`B`different trees are created based on different bootstrap samples. Then for prediction we use the most common answer from all `B` trees
 
 
 This works analogously for the classification case with:
@@ -166,8 +162,6 @@ This works analogously for the classification case with:
 ```{r}
 bagging_classification <- function(X = data_cla_li$x, Y = data_reg_li$y, B = 100)
 ```
-
-BIS HIER(Mikhail)!!!
 
 
 ### Create trees with `random_forest()`
