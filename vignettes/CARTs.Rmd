@@ -144,7 +144,7 @@ The `tree_plot` function is used to visualize a decision tree from a greedy data
 tree_plot(data = data_greedy_cla)
 ```
 
-Abschnitt NEU CODE HIER WIRD NOCH VERÄNDERT (Mikhail)!!!
+
 ### Create trees with `bagging()`
 
 `bagging()` is an extension of greedy_cart() that uses bootstrap aggregation to create multiple training trees in order to achieve greater accuracy by aggregating their predictions. Each time the function is called,`B`different trees are created based on different bootstrap samples.
