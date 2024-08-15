@@ -48,7 +48,7 @@ ui <- fluidPage(
         numericInput("min_num", "Only splits nodes with at least child nodes:", value = 1, min = 1),
         numericInput("m", "Number of coordinates used in each iteration:", value = 1, min = 1),
         numericInput("B", "Number of Bootstrap samples:", value = 10, min = 1),
-        numericInput("A", "Number of boostrap samples to be used", value = 5, min = 1)
+        numericInput("A", "Number of boostrap samples to be used:", value = 5, min = 1)
       )
     )
   ),
@@ -64,7 +64,7 @@ ui <- fluidPage(
     width = 4,
     wellPanel(
       h4("Choose a tree"),
-      textInput("tree_num", "Which tree do you want to see (Baggin/Random Forest genrate more than one tree):", value = "1")
+      textInput("tree_num", "Which tree do you want to see (Baggin/Random Forest generate more than one tree):", value = "1")
     )
   ),
   
