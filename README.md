@@ -19,5 +19,4 @@ Examples and tutorials on how to use the implemented algorithms.
 ## Contributors
 - Lorenz
 - Mikhail
-- Felix
 - Arvin
