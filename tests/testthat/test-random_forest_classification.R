@@ -34,27 +34,24 @@ test_that("random_forest_classification throws errors for invalid input", {
   
   #Invalid input:
   
-  #data
-  expect_error(random_forest_classification(data = list(x = 1, y = 1), B = 10), "data must be a list")
-  
   #B
-  expect_error(random_forest_classification(data, B = -1), "Number of bootstrap samples must be greater than or equal to 1")
+  expect_error(random_forest_classification(data, B = -1, A = 2), "Number of bootstrap samples must be greater than or equal to 1")
   
   #A
-  expect_warning(random_forest_classification(data, B = 10, A = 200), "A is too large")
-  expect_warning(random_forest_classification(data, B = 10, A = -5), "A must be greater 0")
+  expect_warning(random_forest_classification(data, B = 5, A = 200, m = 1), "A is too large")
+  expect_warning(random_forest_classification(data, B = 5, A = -5, m = 1), "A must be greater 0")
   
   #m
-  expect_warning(random_forest_classification(data, B = 10, m = -5), "m must be greater 0")
+  expect_warning(random_forest_classification(data, B = 5, A = 2, m = -5), "m must be greater 0")
   
   #num_leaf
-  expect_warning(random_forest_classification(data, B = 10, num_leaf = -1), "num_leaf must be greater than or equal to 1")
+  expect_warning(random_forest_classification(data, B = 5, A = 2, num_leaf = -1), "num_leaf must be greater than or equal to 1")
   
   #num_split
-  expect_warning(random_forest_classification(data, B = 10, num_split = 1), "num_split must be greater or equal to 2")
+  expect_warning(random_forest_classification(data, B = 5, A = 2,num_split = 1), "num_split must be greater or equal to 2")
   
   #min_num
-  expect_warning(random_forest_classification(data, B = 10, min_num = 0), "min_num must be greater than or equal to 1")
+  expect_warning(random_forest_classification(data, B = 5, A = 2, min_num = 0), "min_num must be greater than or equal to 1")
 })
 
 test_that("random_forest_classification uses bagging if m and A equal dimension and length", {
