@@ -35,6 +35,10 @@ prediction <- function(list_tree, list_x, type = NULL){
     stop("The input of list_x must be a matrix")
   }
   
+  if(type != "reg" & type != "cla"){
+    stop("Invalid type!")
+  }
+  
   if(is.null(type)){
     stop("The type is not set! Set the type reg for regression or cla for classification.")
   }
