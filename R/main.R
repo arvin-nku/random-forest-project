@@ -12,16 +12,8 @@ library(rlang)
 #' 
 #' @return 
 #' @export
-#' @example
-#' X1 <- runif(100, 0, 1)
-#' X2 <- runif(100, 0, 1)
-#' e <- rnorm(100, 0, 0.1)
-#' Y <- X1^2 + X2 + e
-#' data_reg_li <- list(a = X1, b=X2, y= Y)
-#' list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg_li, type = "reg", B = 5, A = 10, m = 1)
-#' list_x <- matrix(c(0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.9, 1), nrow = 2)
-#' predictions <- prediction(list_tree, list_x, type = "reg")
-
+#' @example 
+#' 
 
 prediction <- function(list_tree, list_x, type = NULL){
   
@@ -40,86 +32,76 @@ prediction <- function(list_tree, list_x, type = NULL){
   }
   
   if(length(list_tree[[1]]$A[[1]][[1]]) != nrow(list_x)){
-    stop("The dimension of list_tree is not equal to the dimension of list_x")
-  }
-  
-  #helpfunctions
-  #node exists
-  exists_node <- function(tree, node_number){
-    return(any(tree$node == node_number))
+  #  stop("The dimension of list_tree is not equal to the dimension of list_x")
   }
 
+  #helpfunctions
   #no leaf-node
-  no_leaf <- function(tree, node_number) {
-    return(length(tree$A[tree$node == node_number][[1]]) > 1)
+  no_leaf <- function(node){
+    if(length(node) > 1){
+      return(T)
+    }
+    return(F)
   }
   
-  #predictions with one tree
+  #node exists
+  #exists_node <- function(tree, node_number){
+  #  for(i in 1:length(node)){
+  #    if(node_number == tree$node[[i]]){
+  #      return(T)
+   #   }
+  #  }
+  #  return(F)
+ # }
+  
+  #predictions with a tree
+  
   pred <- function(tree, x){
     #start-node for prediction
-    node_cur <- tree$node[tree$name == "root"]
-    
-    #left and right child nodes
-    node_left <- node_cur*2 
-    node_right <- (node_cur*2) + 1
+    node_cur <- tree
     
     #find leaf node
-    while(no_leaf(tree, node_cur) && ((exists_node(tree, node_left)) || exists_node(tree, node_right))){
+    while(no_leaf(node_cur)){
+      #left and right child nodes
+      left_node <- node_cur$left
+      right_node <- node_cur$right
+      
       #node has a left child
-      if(exists_node(tree, node_left)){
-        dim_cur <- tree$split_index[tree$node == node_left]
-        
-        #take the first not NA value if the first is NA
-        if(is.na(dim_cur)){
-          dim_cur <- tree$split_index[!is.na(tree$split_index)][1]
-        }
-        #compare value with split point
-        if(x[dim_cur] < tree$split_point[tree$node == node_left]){
-          #move left
-          node_new <- node_left
-          node_cur <- tree$node[tree$node == node_new]  #move to the left child
+      if(!is.null(left_node)){
+        dim_cur <- node_cur$split_index
+        if(x[dim_cur] < node_cur$split_point){
+          node_cur <- left_node  #move to the left child
         } else {
-          #move right
-          node_new <- node_right
-          node_cur <- tree$node[tree$node == node_new]  #move to the right child
+          node_cur <- right_node  #move to the right child
         }
-      }
-      else if(exists_node(tree, node_right)){
-        #if left does not exists check for right
-        dim_cur <- tree$split_index[tree$node == node_right]
-        
-      if(x[dim_cur] < tree$split_point[tree$node == node_right]){
-        #move left
-        node_new <- node_left
-        node_cur <- tree$node[tree$node == node_new]
-      }
-      else{
-        #move right
-        node_new <- node_right
-        node_cur <- tree$node[tree$node == node_new]
+      } else {
+        #break if there is no child
+        break
       }
     }
-    #update left/right node 
-    node_left <- node_cur*2 
-    node_right <- (node_cur*2) + 1 
-  }
+    
     # Return the prediction value of the leaf node
-    return(tree$c_value[tree$node == node_cur])
+    return(node_cur$prediction)
   }
   
-  #calculation of predictions based on a list of decision trees
-  y_p <- sapply(1:ncol(list_x), function(i) {
-    #for each column in list_x
-    list_y <- sapply(1:length(list_tree), function(j) {
-    #for each tree in list_tree 
-      pred(list_tree[[j]], list_x[, i])
-    })
-    #calculate the result based on the type
+  #predict a single value using all trees
+  predict_single_value <- function(x_col, list_tree, type) {
+    #predictions for the current column
+    #debug(pred)
+    y_list <- sapply(list_tree, function(tree) pred(tree, x_col))
+    #print(y_list)
+    #compute the final value based on the type
     if (type == "reg") {
-      return(mean(list_y))
-    } else if (type == "cla") {
-      return(as.integer(tail(names(sort(table(list_y))), 1)))
+      return(mean(y_list))
     }
-  })
-  return(y_p)
+    if (type == "class") {
+      return(tail(names(sort(table(y_list))), 1))
+    }
+  }
+  
+  #predictions for all columns in list_xt
+  #debug(predict_single_value)
+  y_s <- sapply(1:ncol(list_x), function(j) predict_single_value(list_x[,j], list_tree, type))
+  
+  return(y_s)
 }
