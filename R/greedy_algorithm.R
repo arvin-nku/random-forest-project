@@ -16,7 +16,7 @@ greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_spli
   # Funktion zur Aufteilung eines Knotens
   split_node <- function(data, depth) {
     # Abbruchbedingungen: 
-    # Keine ausreichenden Datenpunkte zum Splitten oder maximale Tiefe erreicht
+    # Keine ausreichenden Datenpunkte zum Splitten oder maximale Tiefe erreicht 
     if (nrow(data$x) < num_split || (!is.null(depth) && depth == 0)) {
       return(list(prediction = mean(data$y)))
     }
@@ -52,7 +52,7 @@ greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_spli
   # Aufruf der rekursiven Split-Funktion, um den Entscheidungsbaum zu erstellen
   tree <- split_node(data, depth)
   tree$name <- "root"  # Root node explicitly named
-  return(list(tree = tree))
+  return(list(tree = tree)) 
 }
 
 # Funktion zur Suche des besten Splits für Regression
