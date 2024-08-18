@@ -5,8 +5,10 @@ library(DiagrammeR)
 library(ggplot2)
 
 #loade function
-source("C:/Users/Beast/Documents/GitHub/random-forest-project/Shiny/create_ran_sam.R")
-source("C:/Users/Beast/Documents/GitHub/random-forest-project/Shiny/plot_tree.R")
+source("create_ran_sam.R")
+source("plot_tree.R")
+source("Rel_Bagging_für_Regressionsbäume.R")
+source("Rel_Bagging_für_Klassifikationsbäume_per_majority_vote.R")
 
 # Define UI for application that draws a histogram
 # Define UI for application
@@ -19,7 +21,7 @@ ui <- fluidPage(
   fluidRow(
     column(
       width = 4,
-      wellPanel(
+      wellPanel( 
         h4("Settings"),
         numericInput("seed", "Random Seed:", value = 123, min = 1),
         selectInput("Algorithm", "Algorithm Type:",
@@ -68,12 +70,13 @@ ui <- fluidPage(
     )
   ),
   
-  # Buttons for actions
+  # Buttons for actionsx
   fluidRow(
     column(
       width = 12,
       actionButton("predict", "Make a prediction", class = "btn-primary"),
       actionButton("plot", "Make a plot of a tree", class = "btn-primary"),
+      actionButton("test", "Show test for bagging", class = "btn-primary"),
     )
   ),
   
@@ -180,8 +183,10 @@ server <- function(input, output) {
              if (type == "reg") {
                data <- create_ran_sample_reg(seed, size)
                #data_rf <- RandomForestPackage::random_forest_regression(data, B)
-               data_rf <- random_forest_regression(data, B = B, A = A)
                
+               data_rf <- random_forest_regression(data = data, B = B, A = A, m = m,
+                                                   num_leaf = num_leaf, depth = depth,
+                                                   num_split = num_split, min_num = min_num)
                pred_value <- prediction(data_rf, list_x_matrix, "reg")
         
                output$prediction <- renderText({
@@ -265,9 +270,11 @@ server <- function(input, output) {
            "bagging" = {
              if (type == "reg") {
                data <- create_ran_sample_reg(seed, size)
+               #(bagging_regression)
                data_bagging <- bagging_regression(data$x, data$y, B)
                output$plot <- renderGrViz({
-                 tree_plot_random_forest(data_bagging[[tree_num]])
+                 plot(data$x, data$y, pch = 21, bg = 'lightgrey', main = "Bagging regression with 1 tree", xlab = "x1", ylab = "y")
+                 #tree_plot_random_forest(data_bagging[[tree_num]])
                })
              } else if (type == "cla") {
                data <- create_ran_sample_cla(seed, size)
@@ -294,6 +301,71 @@ server <- function(input, output) {
              }
            }
     )
+  })
+  
+  observeEvent(input$test, {
+    algo <- input$Algorithm
+    type <- input$type
+    output$plot <- renderGrViz({
+      NULL
+    })
+    if (algo == "bagging")
+    {
+    if (type == "reg")
+    {
+      set.seed(123)
+      n <- 200
+      x <- runif(n, 0, 1)
+      y <- sin(2 * pi * x) + rnorm(n, 0, 0.1)
+      data <- list(x = matrix(x, nrow = 1, byrow = TRUE), y = y)
+
+      X <- data$x
+      Y <- data$y
+
+      single_model <- greedy_cart_regression(data = data)
+      pred_single <- bagging_regression_prediction(list(single_model), X)
+      output$plot <- renderGrViz({
+        par(mfrow = c(2, 2))
+        plot(data$x, data$y,pch = 21, bg = 'lightgrey', main = "Bagging regression with 1 tree", xlab = "x1", ylab = "y")
+        
+        lines(sort(data$x), pred_single[order(data$x)], col = 'blue')
+        lines(sort(data$x), sin(2 * pi * sort(data$x)), col = 'red')
+        #debug(bagging_regression)
+        models <- bagging_regression(X, Y, B = 100)
+        
+        pred_bagging <- bagging_regression_prediction(models, X)
+        
+        plot(data$x, data$y, pch = 21, bg = 'lightgrey', main = "Bagging regression with 100 trees", xlab = "x1", ylab = "y")
+        lines(sort(data$x), pred_bagging[order(data$x)], col = 'blue')
+        lines(sort(data$x), sin(2 * pi * sort(data$x)), col = 'red')
+        par(mfrow = c(1, 1))
+      })
+    }
+    
+    if (type == "cla")
+    {
+      set.seed(123)
+      n <- 400
+      x1 <- runif(n, 0, 1)
+      x2 <- runif(n, 0, 1)
+      y <- ifelse(sin(2 * pi * x1) + rnorm(n, 0, 0.1) > x2, 1, 2)
+      data <- list(x = matrix(c(x1, x2), nrow = 2, byrow = T), y = as.numeric(as.factor(y)))
+      X = data$x
+      Y = data$y
+      
+      plot_data <- data.frame(x1 = x1, x2 = x2, y = as.numeric(as.factor(y)))
+      models <- bagging_classification(t(X), Y, B = 5, x_vector = c(x1, x2))
+      plot1 <- plot_decision_boundary(plot_data, models, "Bagging classification with B = 10 trees")
+      
+      one_tree <- bagging_classification(t(X), Y, B = 1, x_vector = c(x1, x2))
+      plot2 <- plot_decision_boundary(plot_data, one_tree, "Bagging classification with B = 1 tree")
+      output$plot <- renderGrViz({
+       #plot_grid(plot1, plot2, ncol = 1)
+        plot(plot_grid(plot1, plot2, ncol = 1))
+        #plot1
+      })
+    }
+    }
   })
 }
 
