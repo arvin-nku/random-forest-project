@@ -8,7 +8,7 @@ if (!require(cowplot)) install.packages("cowplot")
 library(ggplot2)
 library(cowplot)
 
-source("random_forsest_classification.R")
+source("random_forsest.R")
 source("main.R")
 
 # Function generates a bootstrap sample from the provided data. It randomly selects 
