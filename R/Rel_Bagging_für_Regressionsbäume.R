@@ -69,7 +69,7 @@ bagging_regression <- function(X, Y, B = 100) {
     Y_boot = sample_data$Y
     #print(X_boot)
     data <- list(x = X_boot, y = Y_boot)
-    model <- greedy_cart_regression(data)# Training a single decision tree on each bootstrap sample
+    model <- greedy_cart_regression(data, num_split = 5)# Training a single decision tree on each bootstrap sample
     models[[i]] <- model
   }
   
@@ -98,7 +98,7 @@ bagging_regression_prediction <- function(models, X) {
   
   preds <- sapply(models, function(model) {
     #debug(prediction)
-    prediction(list_tree = model, list_x = X, type = 'reg')
+    prediction(list_tree = list(model), list_x = X, type = 'reg')
   })
   
   #print(preds)
