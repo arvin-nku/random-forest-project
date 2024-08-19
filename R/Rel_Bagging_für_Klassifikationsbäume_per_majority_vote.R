@@ -30,14 +30,14 @@ bootstrap_sample_classification <- function(X, Y) {
   {
     stop("Y must be vector!")
   }
-  n <- nrow(X)
+  n <- ncol(X)
   
   if (n != length(Y))
   {
     stop("Dimension of x and y in data are not equal")
   }
   sample_indices <- sample(1:n, n, replace = TRUE)
-  return(list("X" = X[sample_indices,], "Y" = Y[sample_indices]))
+  return(list("X" = X[,sample_indices], "Y" = Y[sample_indices]))
 }
 
 # Function trains multiple classification models (decision trees) on different bootstrap 
@@ -57,7 +57,8 @@ bagging_classification<- function(X, Y, B = 100, x_vector = NULL) {
     X_boot = sample_data$X
     Y_boot = sample_data$Y
     data <- list(x = X_boot, y = Y_boot)
-    models[[i]] <- greedy_cart_classification(data = data) # Training a single decision tree on each bootstrap sample
+    #debug(greedy_cart_classification)
+    models[[i]] <- greedy_cart_classification(data = data, depth = 5) # Training a single decision tree on each bootstrap sample
   }
   
   return(models)
@@ -75,8 +76,8 @@ bagging_classification_prediction <- function(models, X) {
   predictions <- matrix(0, n, B)
   
   for (i in 1:B) {
-    print(length(prediction(list_tree = models[[i]], list_x = t(X), type = 'class')))
-    predictions[, i] <- prediction(list_tree = models[[i]], list_x = t(X), type = 'class')
+    #print(length(prediction(list_tree = models[[i]], list_x = t(X), type = 'class')))
+    predictions[, i] <- prediction(list_tree = list(models[[i]]), list_x = t(X), type = 'cla')
   }
   # Use majority voting to determine the final prediction
   bagged_predictions <- apply(predictions, 1, function(row) names(which.max(table(row))))
