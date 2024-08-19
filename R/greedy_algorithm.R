@@ -1,329 +1,572 @@
-library(dplyr)
-library(rlang)
+#' Find Leaf Nodes
+#'
+#' Helper function to identify leaf nodes in a decision tree.
+#' The function filters the nodes where `name` is "leaf" and returns the corresponding node identifiers.
+#' 
+#' @param tree A tibble representing the decision tree.
+#' @return A vector of node identifiers corresponding to leaf nodes.
+#' @export
+find_leaf1 <- function(tree){
+  tree %>%
+    filter(name == "leaf") -> leafs
+  return(leafs$node)
+}
 
 #' Greedy Algorithm (Regression)
 #'
-#' Greedy algorithm for regression data
+#' Greedy algorithm for regression data.
+#' This function builds a regression tree using a greedy algorithm based on minimizing squared error.
 #'
-#' @param data A named list that contains regression data
-#' The x values have the name 'x' and are in the form of a matrix where the row number gives the dimension of the data.
-#' The y values have the name 'y' and are in the form of a vector.
-#' @param depth Condition to end: the tree has a depth 'depth'. Must be greater than or equal to 0.
-#' The default value is the maximal achievable depth.
-#' @param num_split Split only nodes which contain at least 'num_split' elements. Must be greater than or equal to 2.
-#' @param min_num Only split a node if both child nodes have at least 'min_num' elements. Must be greater than or equal to 1.
-#' @param num_leaf Condition to end: the tree has 'num_leaf' leaves. Must be greater than or equal to 1.
-#' The default value is the maximal achievable number of leaves (the number of data points).
-#' @param m Parameter for the Random Forest algorithm: positive number of coordinates (features) to use in each iteration.
-#' The default value is the dimension of the data (all features).
+#' @param data A named list containing regression data. The x values have the name `x` and are in the form of a matrix where the row number gives the dimension of the data. The y values have the name `y` and are in the form of a vector.
+#' @param num_leaf Condition to end: the tree has `num_leaf` leaves. Must be greater than or equal to 1. The default value is the maximum number of leaves (the number of data points).
+#' @param depth Condition to end: the tree has depth `depth`. Must be greater than or equal to 0. The default value is the maximum achievable depth.
+#' @param num_split Split only nodes which contain at least `num_split` elements. Must be greater than or equal to 2.
+#' @param min_num Only split a node if both child nodes have at least `min_num` elements. Must be greater than or equal to 1.
+#' @param m Parameter for Random Forest algorithm: positive number of coordinates used in each iteration. The default value is the dimension of the data.
 #'
-#' @return A list containing the decision tree in tibble form and other relevant details.
+#' @return An environment containing the elements `dim`, `values`, and `tree`. 
+#' \itemize{
+#'   \item `dim`: The dimension of the data.
+#'   \item `values`: Data in a tibble format.
+#'   \item `tree`: Decision tree in the form of a tibble. It has the following columns:
+#'     \itemize{
+#'       \item `node`: Node identifier, where node n has child nodes 2n and 2n + 1.
+#'       \item `name`: Type of the node (root, inner node, leaf).
+#'       \item `split_index`: Index at which data is split.
+#'       \item `split_point`: Value at which data is split.
+#'       \item `y`: y values of data contained in this node.
+#'       \item `A`: x values of data contained in this node.
+#'       \item `c_value`: The approximate value for the data elements in a node.
+#'     }
+#' }
 #' @export
-greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_split = 2, min_num = 1, m = 0) {
+greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_split = 2, min_num = 1, m = 0){
+  
   # Input verification and setting default parameters
   d <- nrow(data$x)  # Number of dimensions/features
-  n <- ncol(data$x)  # Number of data points
   
-  # Set default values for num_leaf and depth if not provided
-  if (is.null(num_leaf)) num_leaf <- n
-  if (is.null(depth)) depth <- Inf
+  if(is.null(num_leaf)) num_leaf <- length(data$y) # Set num_leaf to the number of data points if not provided
   
-  # Ensure all conditions are met
-  stopifnot(num_split >= 2, min_num >= 1, num_leaf >= 1, depth >= 0)
+  # Parameter validation
+  if (!is.null(depth)){
+    if(depth < 0) {warning("depth must be greater than or equal to 0. depth is set to the maximal depth"); depth <- -1}
+  }
+  if (num_split < 2) {warning("num_split must be greater than or equal to 2. num_split is set to 2"); num_split <- 2}
+  if (min_num < 1) {warning("min_num must be greater than or equal to 1. min_num is set to 1"); min_num <- 1}
+  if (num_leaf < 1) {warning("num_leaf must be greater than or equal to 1. num_leaf is set to ", length(data$y)); num_leaf <- length(data$y)}
   
-  # Set the number of features to use in each iteration (m)
-  if (m <= 0) m <- d
-  if (m > d) m <- d
+  if(is.null(depth)) depth <- -1
+  if(as.integer(num_leaf) != num_leaf) {warning("num_leaf is not an integer. The value is set to ", ceiling(num_leaf)); num_leaf <- ceiling(num_leaf)}
+  if(as.integer(depth) != depth) {warning("depth is not an integer. The value is set to ", ceiling(depth)); depth <- ceiling(depth)}
+  if(as.integer(num_split) != num_split) {warning("num_split is not an integer. The value is set to ", ceiling(num_split)); num_split <- ceiling(num_split)}
+  if(as.integer(min_num) != min_num) {warning("min_num is not an integer. The value is set to ", ceiling(min_num)); min_num <- ceiling(min_num)}
   
-  # Initialize the decision tree with the root node
-  tree <- tibble(
-    node = 1,  # Root node identifier
-    name = "leaf",  # Node type (initially, the root is a leaf)
-    split_index = NA,  # No split at the root
-    split_point = NA,  # No split point at the root
-    y = list(data$y),  # All y values at the root
-    A = list(as.data.frame(t(data$x))),  # All x values at the root
-    c_value = mean(data$y)  # Mean of y values (regression prediction)
-  )
+  t <- num_leaf
   
-  current_leaves <- 1  # Number of current leaf nodes
+  row <- nrow(data$x)
+  if(as.integer(m) != m) {warning("m is not an integer. m is set to ", ceiling(m)); m <- ceiling(m)}
+  if (m > row) {warning("m is too big. m is set to " , row); m <- row}
+  if(missing(m)) m <- row
+  if(m <= 0) {warning("m must be greater than 0. m is set to ", row); m <- row}
   
-  # Tree growing loop until we reach the desired number of leaves or no more splits are possible
-  while (current_leaves < num_leaf && any(tree$name == "leaf")) {
-    leaves <- which(tree$name == "leaf")  # Indices of current leaves
+  # Initialize environment to store the tree and other relevant information
+  greedyReg <- new.env()
+  
+  dat <- t(data$x)  # Transpose x for easier manipulation
+  colnames(dat) <- paste0('x', 1:ncol(dat))  # Name the columns x1, x2, etc.
+  tb <- as_tibble(dat)
+  if(row == 1){
+    greedyReg$values <- bind_cols(as_tibble_col(as.vector(data$x), column_name = "x"), as_tibble_col(as.vector(data$y), column_name = "y"))
+  } else{
+    greedyReg$values <- bind_cols(tb, as_tibble_col(as.vector(data$y), column_name = "y"))
+  }
+  
+  greedyReg$dim <- row  # Store the dimension of the data
+  # X and y setup
+  X <- lapply(seq_len(ncol(data$x)), function(i) data$x[,i])
+  n <- length(data$y)
+  mean <- 1/n*sum(data$y)
+  tree <- tibble(node = 1, name = "leaf", split_index = NA, split_point = NA, y = list(NULL), A = list(NULL), c_value = mean)
+  
+  tree[tree$node == 1,]$A[[1]] <- X  # Initialize the root node
+  tree[tree$node == 1,]$y[[1]] <- as.list(data$y)
+  
+  # Utility functions for tree splitting
+  # A1 and A2 are used to split data into left and right child nodes
+  A1 <- function(j,s,v){
+    set <- tree[tree$node == v, ]$A[[1]]
+    A_1 <- list()
+    for(i in seq_along(set)){
+      if(set[[i]][j] < s){
+        A_1[[length(A_1) + 1]] <- set[[i]]
+      }
+    }
+    A_1
+  }
+  
+  A2 <- function(j,s,v){
+    set <- tree[tree$node == v, ]$A[[1]]
+    A_2 <- list()
+    for(i in seq_along(set)){
+      if(set[[i]][j] >= s){
+        A_2[[length(A_2) + 1]] <- set[[i]]
+      }
+    }
+    A_2
+  }
+  
+  # c1 and c2 calculate the mean y value for the left and right child nodes respectively
+  c1 <- function(j,s,v){
+    Y <- 0
+    A_1 <- A1(j,s,v)
+    for(i in seq_along(X)){
+      if(Position(function(x) identical(x, X[[i]]), A_1, nomatch = 0) > 0) Y <- Y + data$y[i]
+    }
+    1/length(A_1) * Y
+  }
+  
+  c2 <- function(j,s,v){
+    Y <- 0
+    A_2 <- A2(j,s,v)
+    for(i in seq_along(X)){
+      if(Position(function(x) identical(x, X[[i]]), A_2, nomatch = 0) > 0) Y <- Y + data$y[i]
+    }
+    1/length(A_2) * Y
+  }
+  
+  # Find y values associated with data points in a specific node
+  find_y <- function(nodes){
+    tr <- tree[tree$node == nodes,]$A[[1]]
+    Y <- list()
+    for(i in seq_along(X)){
+      if(Position(function(x) identical(x, X[[i]]), tr, nomatch = 0) > 0){
+        Y[[length(Y) + 1]] <- data$y[i]
+      }
+    }
+    Y
+  }
+  
+  # Tree construction loop
+  # This loop iteratively splits the tree until stopping criteria are met
+  cond <- sapply(tree$A, length)
+  if(depth == -1){
+    depth_count <- -2
+  } else{
+    depth_count <- 0
+  }
+  
+  while(!all(cond %in% 0:(num_split - 1)) & length(find_leaf1(tree)) <= t - 1 & depth_count < depth){
+    tree1 <- tree  # Save the current state of the tree to check for changes
+    leafs <- find_leaf1(tree)  # Find the current leaf nodes
     
-    # Iterate over each leaf node to attempt a split
-    for (v in leaves) {
-      current_data <- tree$A[[v]]  # Data points in the current leaf
+    for(v in leafs){
+      if(length(tree[tree$node == v,]$A[[1]]) %in% 0:(num_split - 1)) next  # Skip if node is too small
       
-      # Skip splitting if the node has fewer data points than num_split
-      if (nrow(current_data) < num_split) next
-      
-      best_split <- list(error = Inf)  # Initialize the best split with infinite error
-      
-      # Iterate over a random subset of features
-      for (j in sample(1:d, m)) {
-        sort_values <- sort(unique(current_data[[j]]))  # Unique sorted values of the feature
-        
-        # Attempt to find the best split point
-        for (i in 1:(length(sort_values) - 1)) {
-          split_point <- mean(sort_values[i:(i+1)])  # Potential split point
-          left_idx <- which(current_data[[j]] < split_point)  # Indices of points going left
-          right_idx <- which(current_data[[j]] >= split_point)  # Indices of points going right
-          
-          # Ensure both child nodes have at least min_num elements
-          if (length(left_idx) < min_num || length(right_idx) < min_num) next
-          
-          # Calculate the mean and error for the left and right splits
-          left_mean <- mean(tree$y[[v]][left_idx])
-          right_mean <- mean(tree$y[[v]][right_idx])
-          left_error <- sum((tree$y[[v]][left_idx] - left_mean)^2)
-          right_error <- sum((tree$y[[v]][right_idx] - right_mean)^2)
-          total_error <- left_error + right_error
-          
-          # Update the best split if the current one is better
-          if (total_error < best_split$error) {
-            best_split <- list(
-              j = j,
-              s = split_point,
-              left_idx = left_idx,
-              right_idx = right_idx,
-              left_mean = left_mean,
-              right_mean = right_mean,
-              error = total_error
-            )
+      # Minimize function to find the best split point
+      minimize <- function(s){
+        Y <- 0
+        A <- A1(j,s,v)
+        c_1 <- c1(j,s,v)
+        c_2 <- c2(j,s,v)
+        for(i in seq_along(X)){
+          if(Position(function(x) identical(x, X[[i]]), A, nomatch = 0) > 0){
+            Y <- Y + (data$y[i] - c_1)^2
+          } else{
+            Y <- Y + (data$y[i] - c_2)^2
           }
+        }
+        Y
+      }
+      
+      # Find the best split among selected features
+      op <- rep(NA, d)
+      value <- rep(NA, d)
+      t1 <- tree[tree$node == v,]$A[[1]]
+      
+      S <- sample(1:d,m)  # Randomly select m features
+      S <- sort(S)
+      for(k in S){
+        j <- k
+        idx <- sapply(t1, function(x) x[j])
+        if(length(unique(idx)) == 1){
+          optimum <- minimize(idx[[1]])
+          op[k] <- optimum
+          value[k] <- idx[[1]]
+        } else{
+          optimum <- optimize(minimize, c(min(idx), max(idx)))
+          op[k] <- optimum$objective
+          value[k] <- optimum$minimum
         }
       }
       
-      # If a valid split was found, update the tree structure
-      if (best_split$error < Inf) {
-        tree$name[v] <- "inner"  # The current node becomes an inner node (not a leaf)
-        
-        # Add left child node
-        tree <- add_row(tree,
-                        node = 2 * tree$node[v],
-                        name = "leaf",
-                        split_index = best_split$j,
-                        split_point = best_split$s,
-                        y = list(tree$y[[v]][best_split$left_idx]),
-                        A = list(current_data[best_split$left_idx, , drop = FALSE]),
-                        c_value = best_split$left_mean
-        )
-        
-        # Add right child node
-        tree <- add_row(tree,
-                        node = 2 * tree$node[v] + 1,
-                        name = "leaf",
-                        split_index = best_split$j,
-                        split_point = best_split$s,
-                        y = list(tree$y[[v]][best_split$right_idx]),
-                        A = list(current_data[best_split$right_idx, , drop = FALSE]),
-                        c_value = best_split$right_mean
-        )
-      }
+      opt <- c()
+      opt[1] <- which.min(op)  # Select the feature with the minimum error
+      opt[2] <- value[which.min(op)]  # Select the corresponding split value
       
-      # Update the count of leaf nodes
-      current_leaves <- sum(tree$name == "leaf")
+      c_1 <- c1(opt[1],opt[2],v)
+      c_2 <- c2(opt[1],opt[2],v)
+      
+      A_1 <- A1(opt[1],opt[2],v)
+      A_2 <- A2(opt[1],opt[2],v)
+      num_leafs <- length(find_leaf1(tree))
+      
+      # Split the node only if both resulting child nodes have at least min_num elements
+      if(length(A_1) >= min_num & length(A_2) >= min_num){
+        if(num_leafs == t){
+          break
+        } else{
+          tree %>%
+            add_row(node = 2*v, split_index = opt[1], split_point = opt[2], c_value = c_1) %>%
+            add_row(node = 2*v + 1, split_index = opt[1], split_point = opt[2], c_value = c_2) -> tree
+          tree[tree$node == 2*v,]$A[[1]] <- A1(opt[1],opt[2],v)
+          tree[tree$node == 2*v + 1,]$A[[1]] <- A2(opt[1],opt[2],v)
+          tree[tree$node == 2*v,]$y[[1]] <- find_y(2*v)
+          tree[tree$node == 2*v + 1,]$y[[1]] <- find_y(2*v + 1)
+          
+          tree %>%
+            mutate(name = ifelse(node == v, "inner node", ifelse(node == 2*v, "leaf", ifelse(node == 2*v + 1, "leaf", name)))) -> tree
+        }
+      }
     }
+    
+    tree %>%
+      filter(name == "leaf") -> leaf_tree
+    cond <- sapply(leaf_tree$A, length)
+    if(depth != -1){
+      depth_count <- depth_count + 1
+    }
+    
+    if(isTRUE(all.equal(tree, tree1))) break  # Stop if no change in the tree
   }
   
-  # Update the root node's name for clarity
-  tree %>% mutate(name = ifelse(node == 1, "root", name))
+  # Mark the root node
+  tree %>%
+    mutate(name = ifelse(node == 1, "root", name)) -> tree
   
-  return(list(tree = tree))
+  greedyReg$tree <- tree
+  
+  return(greedyReg)
 }
 
 #' Greedy Algorithm (Classification)
 #'
-#' Greedy algorithm for classification data
+#' Greedy algorithm for classification data.
 #'
-#' @param data A named list that contains classification data
-#' The x values have the name 'x' and are in the form of a matrix where the row number gives the dimension of the data.
-#' The y values have the name 'y' and are in the form of a vector.
-#' @param depth Condition to end: the tree has a depth 'depth'. Must be greater than or equal to 0.
-#' The default value is the maximal achievable depth.
-#' @param num_split Split only nodes which contain at least 'num_split' elements. Must be greater than or equal to 2.
-#' @param min_num Only split a node if both child nodes have at least 'min_num' elements. Must be greater than or equal to 1.
-#' @param num_leaf Condition to end: the tree has 'num_leaf' leaves. Must be greater than or equal to 1.
-#' The default value is the maximal achievable number of leaves (the number of data points).
-#' @param m Parameter for the Random Forest algorithm: positive number of coordinates (features) to use in each iteration.
-#' The default value is the dimension of the data (all features).
-#' @param unique Parameter for classification data: if 'unique' is set to TRUE, we don't split nodes where all data points in this node have the same class (y value).
-#' The default value is FALSE.
+#' @param data A named list containing classification data. The x values have the name `x` and are in the form of a matrix where the row number gives the dimension of the data. The y values have the name `y` and are in the form of a vector.
+#' @param num_leaf Condition to end: the tree has `num_leaf` leaves. Must be greater than or equal to 1. The default value is the maximum number of leaves (the number of data points).
+#' @param depth Condition to end: the tree has depth `depth`. Must be greater than or equal to 0. The default value is the maximum achievable depth.
+#' @param num_split Split only nodes which contain at least `num_split` elements. Must be greater than or equal to 2.
+#' @param min_num Only split a node if both child nodes have at least `min_num` elements. Must be greater than or equal to 1.
+#' @param m Parameter for Random Forest algorithm: positive number of coordinates used in each iteration. The default value is the dimension of the data.
+#' @param unique If `unique` is set to TRUE, nodes where all data points in this node have the same class (y value) are not split. The default value is FALSE.
 #'
-#' @return A list containing the decision tree in tibble form and other relevant details.
+#' @return An environment containing the elements `dim`, `values`, and `tree`.
+#' \itemize{
+#'   \item `dim`: The dimension of the data.
+#'   \item `values`: Data in a tibble format.
+#'   \item `tree`: Decision tree in the form of a tibble. It has the following columns:
+#'     \itemize{
+#'       \item `node`: Node identifier, where node n has child nodes 2n and 2n + 1.
+#'       \item `name`: Type of the node (root, inner node, leaf).
+#'       \item `split_index`: Index at which data is split.
+#'       \item `split_point`: Value at which data is split.
+#'       \item `y`: y values of data contained in this node.
+#'       \item `A`: x values of data contained in this node.
+#'       \item `c_value`: The approximate value for the data elements in a node.
+#'     }
+#' }
 #' @export
-greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_split = 2, min_num = 1, m = 0, unique = FALSE) {
-  # Input verification and setting default parameters
-  d <- nrow(data$x)  # Number of dimensions/features
-  n <- ncol(data$x)  # Number of data points
+greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_split = 2, min_num = 1, m = 0, unique = FALSE){
+  if(is.null(num_leaf)) num_leaf <- length(data$y)
+  d <- nrow(data$x)
   
-  # Set default values for num_leaf and depth if not provided
-  if (is.null(num_leaf)) num_leaf <- n
-  if (is.null(depth)) depth <- Inf
+  if (!is.null(depth)){
+    if(depth < 0) {warning("depth must be greater than or equal to 0. depth is set to the maximal depth"); depth <- -1}
+  }
+  if (num_split < 2) {warning("num_split must be greater than or equal to 2. num_split is set to 2"); num_split <- 2}
+  if (min_num < 1) {warning("min_num must be greater than or equal to 1. min_num is set to 1"); min_num <- 1}
+  if (num_leaf < 1) {warning("num_leaf must be greater than or equal to 1. num_leaf is set to ", length(data$y)); num_leaf <- length(data$y)}
   
-  # Ensure all conditions are met
-  stopifnot(num_split >= 2, min_num >= 1, num_leaf >= 1, depth >= 0)
+  if(!is.logical(unique)) {warning("unique must be logical. unique is set to FALSE"); unique <- FALSE}
   
-  # Set the number of features to use in each iteration (m)
-  if (m <= 0) m <- d
-  if (m > d) m <- d
+  if(is.null(depth)) depth <- -1
+  if(as.integer(num_leaf) != num_leaf) {warning("num_leaf is not an integer. The value is set to ", ceiling(num_leaf)); num_leaf <- ceiling(num_leaf)}
+  if(as.integer(depth) != depth) {warning("depth is not an integer. The value is set to ", ceiling(depth)); depth <- ceiling(depth)}
+  if(as.integer(num_split) != num_split) {warning("num_split is not an integer. The value is set to ", ceiling(num_split)); num_split <- ceiling(num_split)}
+  if(as.integer(min_num) != min_num) {warning("min_num is not an integer. The value is set to ", ceiling(min_num)); min_num <- ceiling(min_num)}
   
-  # Initialize the decision tree with the root node
-  tree <- tibble(
-    node = 1,  # Root node identifier
-    name = "leaf",  # Node type (initially, the root is a leaf)
-    split_index = NA,  # No split at the root
-    split_point = NA,  # No split point at the root
-    y = list(data$y),  # All y values at the root
-    A = list(as.data.frame(t(data$x))),  # All x values at the root
-    c_value = as.integer(names(sort(table(data$y), decreasing = TRUE))[1])  # Most frequent class (classification prediction)
-  )
+  t <- num_leaf
   
-  current_leaves <- 1  # Number of current leaf nodes
+  row <- nrow(data$x)
+  if(as.integer(m) != m) {warning("m is not an integer. m is set to ", ceiling(m)); m <- ceiling(m)}
+  if (m > row) {warning("m is too big. m is set to " , row); m <- row}
+  if(missing(m)) m <- row
+  if(m <= 0) {warning("m must be greater than 0. m is set to ", row); m <- row}
   
-  # Tree growing loop until we reach the desired number of leaves or no more splits are possible
-  while (current_leaves < num_leaf && any(tree$name == "leaf")) {
-    leaves <- which(tree$name == "leaf")  # Indices of current leaves
+  # Initialize environment to store the tree and other relevant information
+  greedyCla <- new.env()
+  greedyCla$dim <- row
+  
+  dat <- t(data$x)
+  colnames(dat) <- paste0('x', 1:ncol(dat))
+  tb <- as_tibble(dat)
+  if(row == 2){
+    greedyCla$values <- bind_cols(as_tibble_col(as.vector(data$x[1, ]), column_name = "x"),
+                                  as_tibble_col(as.vector(data$x[2, ]), column_name = "y"))
+    greedyCla$values <- bind_cols(greedyCla$values, as_tibble_col(data$y, column_name = "classes"))
+  } else{
+    greedyCla$values <- bind_cols(tb, as_tibble_col(as.vector(data$y), column_name = "classes"))
+  }
+  
+  X <- lapply(seq_len(ncol(data$x)), function(i) data$x[,i])
+  n <- length(data$y)
+  tree <- tibble(node = 1, name = "leaf", split_index = NA, split_point = NA, y = list(NULL), A = list(NULL), c_value = 0)
+  
+  tree[tree$node == 1,]$A[[1]] <- X
+  tree[tree$node == 1,]$y[[1]] <- as.list(data$y)
+  
+  K <- length(unique(data$y))
+  
+  # Utility functions for splitting data in classification tasks
+  A1 <- function(j,s,v){
+    set <- tree[tree$node == v, ]$A[[1]]
+    A_1 <- list()
+    for(i in seq_along(set)){
+      if(set[[i]][j] < s){
+        A_1[[length(A_1) + 1]] <- set[[i]]
+      }
+    }
+    A_1
+  }
+  
+  A2 <- function(j,s,v){
+    set <- tree[tree$node == v, ]$A[[1]]
+    A_2 <- list()
+    for(i in seq_along(set)){
+      if(set[[i]][j] >= s){
+        A_2[[length(A_2) + 1]] <- set[[i]]
+      }
+    }
+    A_2
+  }
+  
+  # p calculates the proportion of class k in set A
+  p <- function(k,A){
+    idx <- 0
+    for(i in seq_along(X)){
+      if(Position(function(x) identical(x, X[[i]]), A, nomatch = 0) > 0 & data$y[[i]] == k){
+        idx <- idx + 1
+      }
+    }
+    if(length(A) == 0) return(0)
+    return(idx/length(A))
+  }
+  
+  # Find the most common class in the root node
+  obj <- rep(NA,K)
+  A_X <- tree[tree$node == 1, ]$A[[1]]
+  for(k in 1:K){
+    obj[[k]] <- p(k, A_X)
+  }
+  tree[tree$node == 1, ]$c_value <- which.max(obj)
+  
+  # c1 and c2 calculate the most common class in the left and right child nodes respectively
+  c1 <- function(j,s,v){
+    obj <- rep(NA,K)
+    A_1 <- A1(j,s,v)
+    for(k in 1:K){
+      obj[[k]] <- p(k, A_1)
+    }
+    which.max(obj)
+  }
+  
+  c2 <- function(j,s,v){
+    obj <- rep(NA,K)
+    A_2 <- A2(j,s,v)
+    for(k in 1:K){
+      obj[[k]] <- p(k, A_2)
+    }
+    which.max(obj)
+  }
+  
+  # Find y values associated with data points in a specific node
+  find_y <- function(nodes){
+    tr <- tree[tree$node == nodes,]$A[[1]]
+    Y <- list()
+    for(i in seq_along(X)){
+      if(Position(function(x) identical(x, X[[i]]), tr, nomatch = 0) > 0){
+        Y[[length(Y) + 1]] <- data$y[i]
+      }
+    }
+    Y
+  }
+  
+  # Tree construction loop
+  cond <- sapply(tree$A, length)
+  if(depth == -1){
+    depth_count <- -2
+  } else{
+    depth_count <- 0
+  }
+  
+  while(!all(cond %in% 0:(num_split - 1)) & length(find_leaf1(tree)) <= t - 1 & depth_count < depth){
+    tree1 <- tree  # Save the current state of the tree to check for changes
+    leafs <- find_leaf1(tree)  # Find the current leaf nodes
     
-    # Iterate over each leaf node to attempt a split
-    for (v in leaves) {
-      current_data <- tree$A[[v]]  # Data points in the current leaf
+    for(v in leafs){
+      if(length(tree[tree$node == v,]$A[[1]]) %in% 0:(num_split - 1)) next  # Skip if node is too small
+      if(unique){
+        if(length(unique(tree[tree$node == v,]$y[[1]])) == 1) next  # Skip if all y values in the node are the same
+      }
       
-      # Skip splitting if the node has fewer data points than num_split or if all y values are identical (if unique is TRUE)
-      if (nrow(current_data) < num_split || (unique && length(unique(tree$y[[v]])) == 1)) next
+      # Minimize function to find the best split point
+      minimize <- function(s){
+        A_1 <- A1(j,s,v)
+        A_2 <- A2(j,s,v)
+        length(A_1)*(1-p(c1(j,s,v),A_1)) + length(A_2)*(1-p(c2(j,s,v), A_2))
+      }
       
-      best_split <- list(error = Inf)  # Initialize the best split with infinite error
+      # Find the best split among selected features
+      op <- rep(NA, d)
+      value <- rep(NA, d)
+      t1 <- tree[tree$node == v,]$A[[1]]
       
-      # Iterate over a random subset of features
-      for (j in sample(1:d, m)) {
-        sort_values <- sort(unique(current_data[[j]]))  # Unique sorted values of the feature
-        
-        # Attempt to find the best split point
-        for (i in 1:(length(sort_values) - 1)) {
-          split_point <- mean(sort_values[i:(i+1)])  # Potential split point
-          left_idx <- which(current_data[[j]] < split_point)  # Indices of points going left
-          right_idx <- which(current_data[[j]] >= split_point)  # Indices of points going right
-          
-          # Ensure both child nodes have at least min_num elements
-          if (length(left_idx) < min_num || length(right_idx) < min_num) next
-          
-          # Calculate the most frequent class and error for the left and right splits
-          left_class <- as.integer(names(sort(table(tree$y[[v]][left_idx]), decreasing = TRUE))[1])
-          right_class <- as.integer(names(sort(table(tree$y[[v]][right_idx]), decreasing = TRUE))[1])
-          left_error <- length(left_idx) * (1 - sum(tree$y[[v]][left_idx] == left_class) / length(left_idx))
-          right_error <- length(right_idx) * (1 - sum(tree$y[[v]][right_idx] == right_class) / length(right_idx))
-          total_error <- left_error + right_error
-          
-          # Update the best split if the current one is better
-          if (total_error < best_split$error) {
-            best_split <- list(
-              j = j,
-              s = split_point,
-              left_idx = left_idx,
-              right_idx = right_idx,
-              left_class = left_class,
-              right_class = right_class,
-              error = total_error
-            )
-          }
+      S <- sample(1:d,m)  # Randomly select m features
+      S <- sort(S)
+      
+      for(k in S){
+        j <- k
+        idx <- sapply(t1, function(x) x[j])
+        if(length(unique(idx)) == 1){
+          optimum <- minimize(idx[[1]])
+          op[k] <- optimum
+          value[k] <- idx[[1]]
+        } else{
+          optimum <- optimize(minimize, c(min(idx), max(idx)))
+          op[k] <- optimum$objective
+          value[k] <- optimum$minimum
         }
       }
       
-      # If a valid split was found, update the tree structure
-      if (best_split$error < Inf) {
-        tree$name[v] <- "inner"  # The current node becomes an inner node (not a leaf)
-        
-        # Add left child node
-        tree <- add_row(tree,
-                        node = 2 * tree$node[v],
-                        name = "leaf",
-                        split_index = best_split$j,
-                        split_point = best_split$s,
-                        y = list(tree$y[[v]][best_split$left_idx]),
-                        A = list(current_data[best_split$left_idx, , drop = FALSE]),
-                        c_value = best_split$left_class
-        )
-        
-        # Add right child node
-        tree <- add_row(tree,
-                        node = 2 * tree$node[v] + 1,
-                        name = "leaf",
-                        split_index = best_split$j,
-                        split_point = best_split$s,
-                        y = list(tree$y[[v]][best_split$right_idx]),
-                        A = list(current_data[best_split$right_idx, , drop = FALSE]),
-                        c_value = best_split$right_class
-        )
+      opt <- c()
+      min <- which(op == min(op))
+      if(length(min) >= 2){
+        x <- sample(min, 1)
+        opt[1] <- x
+        opt[2] <- value[x]
+      } else{
+        opt[1] <- which.min(op)
+        opt[2] <- value[which.min(op)]
       }
       
-      # Update the count of leaf nodes
-      current_leaves <- sum(tree$name == "leaf")
+      c_1 <- c1(opt[1],opt[2],v)
+      c_2 <- c2(opt[1],opt[2],v)
+      
+      A_1 <- A1(opt[1],opt[2],v)
+      A_2 <- A2(opt[1],opt[2],v)
+      num_leafs <- length(find_leaf1(tree))
+      
+      # Split the node only if both resulting child nodes have at least min_num elements
+      if(length(A_1) >= min_num & length(A_2) >= min_num){
+        if(num_leafs == t){
+          break
+        } else{
+          tree %>%
+            add_row(node = 2*v, split_index = opt[1], split_point = opt[2], c_value = c_1) %>%
+            add_row(node = 2*v + 1, split_index = opt[1], split_point = opt[2], c_value = c_2) -> tree
+          tree[tree$node == 2*v,]$A[[1]] <- A1(opt[1],opt[2],v)
+          tree[tree$node == 2*v + 1,]$A[[1]] <- A2(opt[1],opt[2],v)
+          tree[tree$node == 2*v,]$y[[1]] <- find_y(2*v)
+          tree[tree$node == 2*v + 1,]$y[[1]] <- find_y(2*v + 1)
+          
+          tree %>%
+            mutate(name = ifelse(node == v, "inner node", ifelse(node == 2*v, "leaf", ifelse(node == 2*v + 1, "leaf", name)))) -> tree
+        }
+      }
     }
+    
+    tree %>%
+      filter(name == "leaf") -> leaf_tree
+    cond <- sapply(leaf_tree$A, length)
+    if(depth != -1){
+      depth_count <- depth_count + 1
+    }
+    
+    if(isTRUE(all.equal(tree, tree1))) break  # Stop if no change in the tree
   }
   
-  # Update the root node's name for clarity
-  tree %>% mutate(name = ifelse(node == 1, "root", name))
+  # Mark the root node
+  tree %>%
+    mutate(name = ifelse(node == 1, "root", name)) -> tree
   
-  return(list(tree = tree))
+  greedyCla$tree <- tree
+  
+  return(greedyCla)
 }
-
-# Wrapper function for greedy_cart to handle both regression and classification
 
 #' Greedy Algorithm
 #'
-#' Greedy algorithm for either regression or classification data
+#' Greedy algorithm for either regression or classification data.
 #'
-#' @param x Column/list name(s) of the x value(s)
-#' @param y Column/list name of the y value
-#' @param data Tibble or named list with data
-#' @param type "reg" for regression tree or "cla" for classification tree.
-#' If type is missing, the function tries to "guess" the type based on the data.
-#' @param depth Condition to end: the tree has depth 'depth'. Must be greater than or equal to 0.
-#' The default value is the maximal achievable depth.
-#' @param num_split Split only nodes which contain at least 'num_split' elements. Must be greater than or equal to 2.
-#' @param min_num Only split a node if both child nodes have at least 'min_num' elements. Must be greater than or equal to 1.
-#' @param num_leaf Condition to end: the tree has 'num_leaf' leaves. Must be greater than or equal to 1.
-#' The default value is the maximal achievable number of leaves (the number of data points).
-#' @param m Parameter for the Random Forest algorithm: positive number of coordinates (features) to use in each iteration.
-#' The default value is the dimension of the data (all features).
-#' @param unique Parameter for classification data: if 'unique' is set to TRUE, we don't split nodes where all data points in this node have the same class (y value).
-#' The default value is FALSE.
+#' @param x Column/list name(s) of the x value(s).
+#' @param y Column/list name of the y value.
+#' @param data Tibble or named list with data.
+#' @param type "reg" for regression tree, "class" for classification tree. If `type` is missing, the function tries to guess the type.
+#' @param num_leaf Condition to end: the tree has `num_leaf` leaves. Must be greater than or equal to 1. The default value is the maximum number of leaves (the number of data points).
+#' @param depth Condition to end: the tree has depth `depth`. Must be greater than or equal to 0. The default value is the maximum achievable depth.
+#' @param num_split Split only nodes which contain at least `num_split` elements. Must be greater than or equal to 2.
+#' @param min_num Only split a node if both child nodes have at least `min_num` elements. Must be greater than or equal to 1.
+#' @param m Parameter for Random Forest algorithm: positive number of coordinates used in each iteration. The default value is the dimension of the data.
+#' @param unique Parameter for classification data: if `unique` is set to TRUE, nodes where all data points in this node have the same class (y value) are not split. The default value is FALSE.
 #'
-#' @return A list containing the decision tree in tibble form and other relevant details.
+#' @return An environment containing the elements `dim`, `values`, and `tree`.
+#' \itemize{
+#'   \item `dim`: The dimension of the data.
+#'   \item `values`: Data in a tibble format.
+#'   \item `tree`: Decision tree in the form of a tibble. It has the following columns:
+#'     \itemize{
+#'       \item `node`: Node identifier, where node n has child nodes 2n and 2n + 1.
+#'       \item `name`: Type of the node (root, inner node, leaf).
+#'       \item `split_index`: Index at which data is split.
+#'       \item `split_point`: Value at which data is split.
+#'       \item `y`: y values of data contained in this node.
+#'       \item `A`: x values of data contained in this node.
+#'       \item `c_value`: The approximate value for the data elements in a node.
+#'     }
+#' }
 #' @export
-greedy_cart <- function(x, y, data, type = NULL, num_leaf = NULL, depth = NULL, num_split = 2, min_num = 1, m = 0, unique = FALSE) {
-  # Convert input data from tibble or list to the required format
-  x1 <- enquo(x)
-  y1 <- enquo(y)
-  data_x <- eval_tidy(x1, data)
-  data_y <- eval_tidy(y1, data)
+greedy_cart <- function(x, y, data, type = NULL, num_leaf = NULL ,depth = NULL, num_split = 2, min_num = 1, m = 0, unique = FALSE){
+  x1 <- enexpr(x)
+  y1 <- enexpr(y)
+  data1 <- eval_tidy(x1,data)
+  data2 <- eval_tidy(y1,data)
   
-  # Input validation to ensure data is numeric and y has only one column
-  stopifnot(is.numeric(data_x), is.numeric(data_y), NCOL(data_y) == 1)
+  stopifnot("x must be numeric" = is.numeric(data1))
+  stopifnot("y must be numeric" = is.numeric(data2))
+  stopifnot("y must be one-dimensional" = NCOL(data2) == 1)
+  stopifnot("x and y don't have compatible length" = as.integer(length(data1)/length(data2))*length(data2) == length(data1))
   
-  # Convert x values into a matrix form
-  mat <- matrix(data_x, nrow = length(data_x) / length(data_y), byrow = TRUE)
-  data <- list(x = mat, y = data_y)
+  mat <- matrix(data1, nrow = length(data1)/length(data2), byrow = TRUE)
+  dat <- list(x = mat, y = data2)
+  row <- nrow(mat)
+  if(missing(m)) m <- row
   
-  # Guess the type if not provided
-  if (is.null(type)) {
-    if (all(as.integer(data_y) == data_y) && all(data_y >= 1)) {
-      type <- "cla"
-      warning("Type was set to classification based on the data.")
-    } else {
+  if(is.null(type)){
+    y_int <- as.integer(data2)
+    if(all(y_int == data2) & all(y_int >= 1)){
+      type <- "class"
+      warning("Type was forgotten. Type was set to classification")
+    } else{
       type <- "reg"
-      warning("Type was set to regression based on the data.")
+      warning("Type was forgotten. Type was set to regression")
     }
   }
   
-  # Call the appropriate greedy_cart function based on the type
-  if (type == "reg") {
-    return(greedy_cart_regression(data, num_leaf, depth, num_split, min_num, m))
-  } else if (type == "cla") {
-    return(greedy_cart_classification(data, num_leaf, depth, num_split, min_num, m, unique))
-  } else {
-    stop("Invalid type! Use 'reg' for regression or 'cla' for classification.")
+  if(type == "reg"){
+    return(greedy_cart_regression(dat, num_leaf = num_leaf, depth = depth, num_split = num_split, min_num = min_num, m = m))
+  } else if(type == "class"){
+    return(greedy_cart_classification(dat, num_leaf = num_leaf, depth = depth, num_split = num_split, min_num = min_num, m = m, unique = unique))
+  } else{
+    stop("Invalid type!")
   }
 }
