@@ -37,7 +37,7 @@ bagging_classification <- function(X, Y, B = 100) {
     X_boot = sample_data$X
     Y_boot = sample_data$Y
     
-    models[[b]] <- randomForest(X_boot, Y_boot, ntree = 1) # Training a single decision tree on each bootstrap sample
+    models[[b]] <- greedy_cart_classification(X_boot, Y_boot, ntree = 1) # Training a single decision tree on each bootstrap sample
   }
   
   return(models)
