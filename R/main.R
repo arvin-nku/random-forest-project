@@ -1,3 +1,7 @@
+library(dplyr)
+library(rlang)
+
+
 #' Prediction of datapoint or a set of data points in a tree or a set of trees
 #'
 #' @param list_tree a list containing an arbitrary number greater or equal to 1 of trees in tibble form\cr 
@@ -18,10 +22,6 @@
 #' list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg_li, type = "reg", B = 5, A = 10, m = 1)
 #' list_x <- matrix(c(0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.9, 1), nrow = 2)
 #' predictions <- prediction(list_tree, list_x, type = "reg")
-
-
-library(dplyr)
-library(rlang)
 
 # Prediction function
 prediction <- function(list_tree, list_x, type = NULL) {
@@ -108,36 +108,3 @@ prediction <- function(list_tree, list_x, type = NULL) {
   
   return(y_p)
 }
-
-
-X1 <- runif(100, 0, 1)
-X2 <- runif(100, 0, 1)
-e <- rnorm(100, 0, 0.1)
-Y <- X1^2 + X2 + e
-data_reg_li <- list(a = X1, b=X2, y= Y)
-list_tree <- random_forest(x = c(X1,X2), y = Y, data = data_reg_li, type = "reg", B = 5, A = 10, m = 1)
-list_x <- matrix(c(0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.9, 1), nrow = 2)
-predictions <- prediction(list_tree, list_x, type = "reg")
-print(predictions)
-
-# Generierung der Daten
-X1 <- runif(100, 0, 1)
-X2 <- runif(100, 0, 1)
-e <- rnorm(100, 0, 0.1)
-Y <- X1^2 + X2 + e
-
-# Erstellen einer Liste für die Eingabedaten
-data_reg_li <- list(a = X1, b = X2, y = Y)
-
-# Ausführung des Greedy CART Algorithmus
-greedy_tree <- greedy_cart(x = c(X1, X2), y = Y, data = data_reg_li, type = "reg", 
-                           num_leaf = 10, depth = 5, num_split = 2, min_num = 1, m = 1)
-
-# Erstellung einer Eingabematrix für die Vorhersage
-list_x <- matrix(c(0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.9, 1), nrow = 2)
-
-# Durchführung der Vorhersage mit dem Greedy CART Baum
-predictions_greedy <- prediction(list(greedy_tree$tree), list_x, type = "reg")
-
-# Ausgabe der Vorhersagen
-print(predictions_greedy)
