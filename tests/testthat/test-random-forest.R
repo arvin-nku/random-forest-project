@@ -7,8 +7,9 @@ test_that("random_forest works with valid input", {
   e <- rnorm(100, 0, 0.1)
   Y_reg <- X1^2 + X2 + e
   data_reg <- list(x = cbind(X1, X2), y = Y_reg)
+  linear_comb <- 1.8 * X1 + 0.3 * X2 + e
   Y_cla <- ifelse(linear_comb > 1, 1, 2)
-  data_cla <- list(a = X1, b = X2, y = Y)
+  data_cla <- list(a = X1, b = X2, y = Y_cla)
   
   #reg
   result_reg <- random_forest(x = c(X1,X2), y = Y_reg, data = data_reg, type = "reg", B = 10, A = 20, m = 1, num_leaf = 5, depth = NULL, num_split = 3, min_num = 2)
@@ -43,9 +44,10 @@ test_that("random_forest automatically determines type", {
   X2 <- runif(100, 0, 1)
   e <- rnorm(100, 0, 0.1)
   Y_reg <- X1^2 + X2 + e
+  linear_comb <- 1.8 * X1 + 0.3 * X2 + e
   data_reg <- list(x = cbind(X1, X2), y = Y_reg)
   Y_cla <- ifelse(linear_comb > 1, 1, 2)
-  data_cla <- list(a = X1, b = X2, y = Y)
+  data_cla <- list(a = X1, b = X2, y = Y_cla)
   
   
   #reg auto type
