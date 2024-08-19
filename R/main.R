@@ -1,6 +1,7 @@
 library(dplyr)
 library(rlang)
 
+
 #' Prediction of datapoint or a set of data points in a tree or a set of trees
 #'
 #' @param list_tree a list containing an arbitrary number greater or equal to 1 of trees in tibble form\cr 
@@ -22,108 +23,88 @@ library(rlang)
 #' list_x <- matrix(c(0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.9, 1), nrow = 2)
 #' predictions <- prediction(list_tree, list_x, type = "reg")
 
-
-prediction <- function(list_tree, list_x, type = NULL){
+# Prediction function
+prediction <- function(list_tree, list_x, type = NULL) {
   
-  #Verification of the input
+  # Verify inputs
+  if (!is.list(list_tree)) stop("The input of list_tree must be a list")
+  if (!is.matrix(list_x)) stop("The input of list_x must be a matrix")
+  if (is.null(type)) stop("The type is not set! Set the type 'reg' for regression or 'cla' for classification.")
+  if (type != "reg" & type != "cla") stop("Invalid type!")
   
-  if(!is.list(list_tree)) {
-    stop("The input of list_tree must be a list")
+  # Adjust for different input types in list_tree
+  if (is.environment(list_tree[[1]])) {
+    list_tree <- lapply(list_tree, function(env) env$tree)
+  } else if (is.data.frame(list_tree[[1]])) {
+    list_tree <- list_tree  # Assume trees are directly in list
+  } else {
+    stop("The input list_tree does not contain valid tree objects.")
   }
   
-  if(!is.matrix(list_x)){
-    stop("The input of list_x must be a matrix")
-  }
-  
-  if(type != "reg" & type != "cla"){
-    stop("Invalid type!")
-  }
-  
-  if(is.null(type)){
-    stop("The type is not set! Set the type reg for regression or cla for classification.")
-  }
-  
-  if(length(list_tree[[1]]$A[[1]][[1]]) != nrow(list_x)){
-    stop("The dimension of list_tree is not equal to the dimension of list_x")
-  }
-  
-  #helpfunctions
-  #node exists
-  exists_node <- function(tree, node_number){
+  # Helper function to check if a node exists
+  exists_node <- function(tree, node_number) {
     return(any(tree$node == node_number))
   }
-
-  #no leaf-node
+  
   no_leaf <- function(tree, node_number) {
-    return(length(tree$A[tree$node == node_number][[1]]) > 1)
+    if (is.na(node_number) || node_number == "") {
+      stop("Node number is NA or empty.")
+    }
+    if (!exists_node(tree, node_number)) {
+      stop(paste("Node", node_number, "does not exist in the tree."))
+    }
+    leaf_status <- length(tree$A[tree$node == node_number][[1]]) > 1
+    return(leaf_status)
   }
   
-  #predictions with one tree
-  pred <- function(tree, x){
-    #start-node for prediction
-    node_cur <- tree$node[tree$name == "root"]
+  # Prediction function for a single tree
+  pred <- function(tree, x) {
+    node_cur <- 1
+    node_left <- node_cur * 2
+    node_right <- (node_cur * 2) + 1
     
-    #left and right child nodes
-    node_left <- node_cur*2 
-    node_right <- (node_cur*2) + 1
-    
-    #find leaf node
-    while(no_leaf(tree, node_cur) && ((exists_node(tree, node_left)) || exists_node(tree, node_right))){
-      #node has a left child
-      if(exists_node(tree, node_left)){
+    while (no_leaf(tree, node_cur) && (exists_node(tree, node_left) || exists_node(tree, node_right))) {
+      if (exists_node(tree, node_left)) {
         dim_cur <- tree$split_index[tree$node == node_left]
         
-        #take the first not NA value if the first is NA
-        if(is.na(dim_cur)){
+        if (is.na(dim_cur)) {
           dim_cur <- tree$split_index[!is.na(tree$split_index)][1]
         }
-        #compare value with split point
-        if(x[dim_cur] < tree$split_point[tree$node == node_left]){
-          #move left
-          node_new <- node_left
-          node_cur <- tree$node[tree$node == node_new]  #move to the left child
+        
+        if (x[dim_cur] < tree$split_point[tree$node == node_left]) {
+          node_cur <- node_left
         } else {
-          #move right
-          node_new <- node_right
-          node_cur <- tree$node[tree$node == node_new]  #move to the right child
+          node_cur <- node_right
         }
-      }
-      else if(exists_node(tree, node_right)){
-        #if left does not exists check for right
+      } else if (exists_node(tree, node_right)) {
         dim_cur <- tree$split_index[tree$node == node_right]
         
-      if(x[dim_cur] < tree$split_point[tree$node == node_right]){
-        #move left
-        node_new <- node_left
-        node_cur <- tree$node[tree$node == node_new]
+        if (x[dim_cur] < tree$split_point[tree$node == node_right]) {
+          node_cur <- node_left
+        } else {
+          node_cur <- node_right
+        }
       }
-      else{
-        #move right
-        node_new <- node_right
-        node_cur <- tree$node[tree$node == node_new]
-      }
+      
+      node_left <- node_cur * 2
+      node_right <- (node_cur * 2) + 1
     }
-    #update left/right node 
-    node_left <- node_cur*2 
-    node_right <- (node_cur*2) + 1 
-  }
-    # Return the prediction value of the leaf node
+    
     return(tree$c_value[tree$node == node_cur])
   }
   
-  #calculation of predictions based on a list of decision trees
+  # Prediction based on a list of trees
   y_p <- sapply(1:ncol(list_x), function(i) {
-    #for each column in list_x
     list_y <- sapply(1:length(list_tree), function(j) {
-    #for each tree in list_tree 
       pred(list_tree[[j]], list_x[, i])
     })
-    #calculate the result based on the type
+    
     if (type == "reg") {
       return(mean(list_y))
     } else if (type == "cla") {
       return(as.integer(tail(names(sort(table(list_y))), 1)))
     }
   })
+  
   return(y_p)
 }
