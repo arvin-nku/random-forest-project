@@ -4,11 +4,6 @@ library(data.tree)
 library(DiagrammeR)
 library(ggplot2)
 
-#loade function
-source("C:/Users/Beast/Documents/GitHub/random-forest-project/Shiny/create_ran_sam.R")
-source("C:/Users/Beast/Documents/GitHub/random-forest-project/Shiny/plot_tree.R")
-
-# Define UI for application that draws a histogram
 # Define UI for application
 ui <- fluidPage(
   
@@ -48,7 +43,7 @@ ui <- fluidPage(
         numericInput("min_num", "Only splits nodes with at least child nodes:", value = 1, min = 1),
         numericInput("m", "Number of coordinates used in each iteration:", value = 1, min = 1),
         numericInput("B", "Number of Bootstrap samples:", value = 10, min = 1),
-        numericInput("A", "Number of boostrap samples to be used:", value = 5, min = 1)
+        numericInput("A", "Number of bootstrap samples to be used:", value = 5, min = 1)
       )
     )
   ),
@@ -74,7 +69,7 @@ ui <- fluidPage(
       width = 12,
       actionButton("predict", "Make a prediction", class = "btn-primary"),
       actionButton("plot", "Make a plot of a tree", class = "btn-primary"),
-      actionButton("bagging", "Show test for bagging", class = "btn-primary"),
+      actionButton("bagging", "Show test for bagging", class = "btn-primary")
     )
   ),
   
@@ -99,7 +94,7 @@ server <- function(input, output) {
       NULL
     })
     
-    #Input
+    # Input
     algo <- input$Algorithm
     type <- input$type
     num_leaf <- input$num_leaf
@@ -111,27 +106,25 @@ server <- function(input, output) {
     A <- input$A
     seed <- input$seed
     size <- input$size
-    #list_x as matrix for perdiction()
-    list_x <- strsplit(input$values, ",")[[1]]
-    list_x <- as.numeric(trimws(list_x))
-    list_x_matrix <- matrix(list_x, nrow = 2)
     
-    #Caption for Output
+    # data_x as matrix for prediction
+    data_values <- as.numeric(strsplit(input$values, ",")[[1]])
+    data_x <- matrix(data_values, nrow = 2, byrow = TRUE)
+    
+    # Caption for Output
     output$caption <- renderText({
       "Prediction"
     })
     
-    #choose algorithem
+    # Choose algorithm
     switch(algo,
            
            "greedy_cart" = {
              if (type == "reg") {
                data <- create_ran_sample_reg(seed, size)
-               #data_greedy <- RandomForestPackage::greedy_cart_regression(data, num_leaf, depth, num_split, min_num, m)
                data_greedy <- greedy_cart_regression(data, num_leaf, depth, num_split, min_num, m)
                
-          
-               pred_value <- prediction(data_greedy, list_x_matrix, "reg")
+               pred_value <- prediction(list(data_greedy$tree), data_x, "reg")
                
                output$prediction <- renderText({
                  paste("Predicted Values Greedy CART:", paste(pred_value, collapse = ", "))
@@ -139,10 +132,9 @@ server <- function(input, output) {
                
              } else if (type == "cla") {
                data <- create_ran_sample_cla(seed, size)
-               #data_greedy <- RandomForestPackage::greedy_cart_classification(data, num_leaf, depth, num_split, min_num, m)
                data_greedy <- greedy_cart_classification(data, num_leaf, depth, num_split, min_num, m)
                
-               pred_value <- prediction(data_greedy, list_x_matrix, "reg")
+               pred_value <- prediction(list(data_greedy$tree), data_x, "cla")
                
                output$prediction <- renderText({
                  paste("Predicted Values Greedy CART:", paste(pred_value, collapse = ", "))
@@ -155,20 +147,18 @@ server <- function(input, output) {
            "bagging" = {
              if (type == "reg") {
                data <- create_ran_sample_reg(seed, size)
-               #data_bagging <- RandomForestPackage::bagging_regression(data$x, data$y, B)
                data_bagging <- bagging_regression(data$x, data$y, B)
                
-               pred_value <- prediction(data_bagging, list_x_matrix, "reg")
+               pred_value <- prediction(data_bagging, data_x, "reg")
                output$prediction <- renderText({
                  paste("Predicted Values Bagging:", paste(pred_value, collapse = ", "))
                })
                
              } else if (type == "cla") {
                data <- create_ran_sample_cla(seed, size)
-               #data_bagging <- RandomForestPackage::bagging_classification(data$x, data$y, B)
                data_bagging <- bagging_classification(data$x, data$y, B)
                
-               pred_value <- prediction(data_bagging, list_x_matrix, "reg")
+               pred_value <- prediction(data_bagging, data_x, "cla")
                output$prediction <- renderText({
                  paste("Predicted Values Bagging:", paste(pred_value, collapse = ", "))
                })
@@ -180,11 +170,10 @@ server <- function(input, output) {
            "random_forest" = {
              if (type == "reg") {
                data <- create_ran_sample_reg(seed, size)
-               #data_rf <- RandomForestPackage::random_forest_regression(data, B)
                data_rf <- random_forest_regression(data, B = B, A = A)
                
-               pred_value <- prediction(data_rf, list_x_matrix, "reg")
-        
+               pred_value <- prediction(data_rf, data_x, "reg")
+               
                output$prediction <- renderText({
                  paste("Predicted Values Random Forest:", paste(pred_value, collapse = ", "))
                })
@@ -192,9 +181,8 @@ server <- function(input, output) {
                
              } else if (type == "cla") {
                data <- create_ran_sample_cla(seed, size)
-               #data_rf <- RandomForestPackage::random_forest_classification(data, B)
                data_rf <- random_forest_classification(data, B = B, A = A)
-               pred_value <- prediction(data_rf, list_x_matrix, "cla")
+               pred_value <- prediction(data_rf, data_x, "cla")
                
                output$prediction <- renderText({
                  paste("Predicted Values Random Forest:", paste(pred_value, collapse = ", "))
@@ -231,8 +219,8 @@ server <- function(input, output) {
     tree_num <- as.integer(input$tree_num)
     
     if(tree_num > B){
-      warning(paste("Chosen tree must be less or equal to", B, ". Tree is set to 1"))
       tree_num <- 1
+      message(paste("Only", B, "trees are available. Displaying tree 1."))
     }
     
     # Caption for Output
@@ -245,8 +233,8 @@ server <- function(input, output) {
            
            "greedy_cart" = {
              if(tree_num > 1){
-               warning(paste("Only one tree is generated by Greedy CART. Tree is set to 1"))
                tree_num <- 1
+               message("Only one tree is generated by Greedy CART. Displaying tree 1.")
              }
              if (type == "reg") {
                data <- create_ran_sample_reg(seed, size)
@@ -300,4 +288,3 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
