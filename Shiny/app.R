@@ -7,8 +7,8 @@ library(ggplot2)
 #loade function
 source("create_ran_sam.R")
 source("plot_tree.R")
-source("Rel_Bagging_für_Regressionsbäume.R")
-source("Rel_Bagging_für_Klassifikationsbäume_per_majority_vote.R")
+source("alg1.R")
+source("alg2.R")
 
 # Define UI for application that draws a histogram
 # Define UI for application
@@ -313,6 +313,7 @@ server <- function(input, output) {
     {
     if (type == "reg")
     {
+      print("sdfsdf")
       set.seed(123)
       n <- 200
       x <- runif(n, 0, 1)
@@ -322,8 +323,10 @@ server <- function(input, output) {
       X <- data$x
       Y <- data$y
 
-      single_model <- greedy_cart_regression(data = data)
+      single_model <- greedy_cart_regression(data = data, num_split = 5)
+      print(single_model$tree)
       pred_single <- bagging_regression_prediction(list(single_model), X)
+      print("sdfsdf")
       output$plot <- renderGrViz({
         par(mfrow = c(2, 2))
         plot(data$x, data$y,pch = 21, bg = 'lightgrey', main = "Bagging regression with 1 tree", xlab = "x1", ylab = "y")
@@ -331,11 +334,11 @@ server <- function(input, output) {
         lines(sort(data$x), pred_single[order(data$x)], col = 'blue')
         lines(sort(data$x), sin(2 * pi * sort(data$x)), col = 'red')
         #debug(bagging_regression)
-        models <- bagging_regression(X, Y, B = 100)
+        models <- bagging_regression(X, Y, B = 10)
         
         pred_bagging <- bagging_regression_prediction(models, X)
-        
-        plot(data$x, data$y, pch = 21, bg = 'lightgrey', main = "Bagging regression with 100 trees", xlab = "x1", ylab = "y")
+        print("sdfsdf")
+        plot(data$x, data$y, pch = 21, bg = 'lightgrey', main = "Bagging regression with 10 trees", xlab = "x1", ylab = "y")
         lines(sort(data$x), pred_bagging[order(data$x)], col = 'blue')
         lines(sort(data$x), sin(2 * pi * sort(data$x)), col = 'red')
         par(mfrow = c(1, 1))
@@ -345,19 +348,19 @@ server <- function(input, output) {
     if (type == "cla")
     {
       set.seed(123)
-      n <- 400
+      n <- 100
       x1 <- runif(n, 0, 1)
       x2 <- runif(n, 0, 1)
       y <- ifelse(sin(2 * pi * x1) + rnorm(n, 0, 0.1) > x2, 1, 2)
       data <- list(x = matrix(c(x1, x2), nrow = 2, byrow = T), y = as.numeric(as.factor(y)))
       X = data$x
       Y = data$y
-      
       plot_data <- data.frame(x1 = x1, x2 = x2, y = as.numeric(as.factor(y)))
-      models <- bagging_classification(t(X), Y, B = 5, x_vector = c(x1, x2))
-      plot1 <- plot_decision_boundary(plot_data, models, "Bagging classification with B = 10 trees")
+      models <- bagging_classification(X, Y, B = 5, x_vector = c(x1, x2))
+      plot1 <- plot_decision_boundary(plot_data, models, "Bagging classification with B = 5 trees")
       
-      one_tree <- bagging_classification(t(X), Y, B = 1, x_vector = c(x1, x2))
+      
+      one_tree <- bagging_classification(X, Y, B = 1, x_vector = c(x1, x2))
       plot2 <- plot_decision_boundary(plot_data, one_tree, "Bagging classification with B = 1 tree")
       output$plot <- renderGrViz({
        #plot_grid(plot1, plot2, ncol = 1)
