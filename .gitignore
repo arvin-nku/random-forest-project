@@ -19,3 +19,6 @@ config/*.env
 !app.log
 .Rproj.user
 inst/doc
+.Rbuildignore
+.Rhistory
+*.Rproj
