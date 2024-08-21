@@ -7,7 +7,7 @@ library(ggplot2)
 #loade function
 source("create_ran_sam.R")
 source("plot_tree.R")
-source("alg1.R")
+source("Rel_Bagging_für_Regressionsbäume.R")
 source("alg2.R")
 
 # Define UI for application that draws a histogram
