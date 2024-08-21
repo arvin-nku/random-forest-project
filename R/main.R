@@ -11,9 +11,11 @@ library(rlang)
 #' @param type “reg” for regression tree\cr
 #' “cla” for classification tree\cr
 #' 
-#' @return 
+#' @return A numeric vector containing the predicted values. For regression trees (`type = "reg"`), 
+#' the predictions are the mean of the predictions across all trees for each data point. 
+#' For classification trees (`type = "cla"`), the predictions are the most frequent class label across all trees for each data point.
 #' @export
-#' @example
+#' @examples
 #' X1 <- runif(100, 0, 1)
 #' X2 <- runif(100, 0, 1)
 #' e <- rnorm(100, 0, 0.1)
