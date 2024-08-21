@@ -8,7 +8,7 @@ library(ggplot2)
 source("create_ran_sam.R")
 source("plot_tree.R")
 source("Rel_Bagging_für_Regressionsbäume.R")
-source("alg2.R")
+source("Rel_Bagging_für_Klassifikationsbäume_per_majority_vote.R.R")
 
 # Define UI for application that draws a histogram
 # Define UI for application
