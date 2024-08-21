@@ -1,3 +1,8 @@
+# Used libraries
+library(tibble)
+library(rlang)
+library(dplyr)
+
 #' Find Leaf Nodes
 #'
 #' Helper function to identify leaf nodes in a decision tree.
@@ -40,6 +45,16 @@ find_leaf1 <- function(tree){
 #'     }
 #' }
 #' @export
+#' 
+#' @examples
+#' X <- runif(100,0,1)
+#' e <- rnorm(100,0,0.2)
+#' Y <- sin(2*pi*X) + e
+#' data <- list(x = matrix(X, nrow = 1), y = Y)
+#' val <- greedy_cart_regression(data, depth = 3)
+#' val$values
+#' val$tree
+
 greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_split = 2, min_num = 1, m = 0){
   
   # Input verification and setting default parameters
@@ -276,6 +291,28 @@ greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_spli
 #'     }
 #' }
 #' @export
+#' 
+#' @examples
+#' X1 <- runif(200,0,1)
+#' X2 <- runif(200,0,1)
+#' e <- rnorm(200,0,0.2)
+#' kappa <- function(x,y) y - 0.5 - 0.3*sin(2*pi*x)
+#' f <- function(x,y,e){
+#'   Y <- c()
+#'   for(i in seq_along(x)){
+#'     if(kappa(X1[i],X2[i]) - e[i] <= 0){
+#'       Y[i] <- 1
+#'     } else{
+#'       Y[i] <- 2
+#'     }
+#'   }
+#'   Y
+#' }
+#' data <- list(x = matrix(c(X1,X2), nrow = 2, byrow = TRUE), y = f(X1,X2,e))
+#' val <- greedy_cart_classification(data, num_split = 10)
+#' val$values
+#' val$tree
+
 greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_split = 2, min_num = 1, m = 0, unique = FALSE){
   if(is.null(num_leaf)) num_leaf <- length(data$y)
   d <- nrow(data$x)
@@ -535,6 +572,36 @@ greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_
 #'     }
 #' }
 #' @export
+#' 
+#' @examples
+#' X <- runif(100,0,1)
+#' e <- rnorm(100,0,0.2)
+#' Y <- sin(2*pi*X) + e
+#' data <- list(a = X, b = Y)
+#' val <- greedy_cart(x = a, y = b, data = data, type = "reg")
+#' val$values
+#' val$tree
+#'
+#' X1 <- runif(200,0,1)
+#' X2 <- runif(200,0,1)
+#' e <- rnorm(200,0,0.05)
+#' k <- function(x,y) (x-0.5)*(y-0.5)
+#' g <- function(x,y,e){
+#'   Y <- c()
+#'   for(i in seq_along(x)){
+#'    if(k(X1[i],X2[i]) - e[i] <= 0){
+#'      Y[i] <- 1
+#'     } else{
+#'       Y[i] <- 2
+#'     }
+#'   }
+#'   Y
+#' }
+#' tbl <- tibble(x1 = X1, x2 = X2, y = g(X1,X2,e))
+#' val <- greedy_cart(x = c(x1,x2), y = y, data = tbl, type = "class", depth = 3)
+#' val$values
+#' val$tree
+
 greedy_cart <- function(x, y, data, type = NULL, num_leaf = NULL ,depth = NULL, num_split = 2, min_num = 1, m = 0, unique = FALSE){
   x1 <- enexpr(x)
   y1 <- enexpr(y)
