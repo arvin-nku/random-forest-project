@@ -4,9 +4,9 @@ Title: Random Forest and Decision Tree Models
 Version: 0.0.1
 Authors@R: 
   c(
-    person("Lorent", "Kiesel", email = "fc220@stud.uni-heidelberg.de", role = c("aut")),
-    person("Arvin", "Nikou", email = "arvin.nikou@stud.uni-heidelberg.de", role = c("cre", "aut")),
-    person("Mikhail", "Volkov", email = "mikhail.volkov@stud.uni-heidelberg.de", role = c("aut"))
+    person("Lorent", "Kiesel", email = "fc220@stud.uni-heidelberg.de", role = c("cre", "aut")),
+    person("Arvin", "Nikou", email = "arvin.nikou@example.com", role = c("cre", "aut")),
+    person("Mikhail", "Volkov", email = "mikhail.volkov@example.com", role = c("cre", "aut"))
   )
 Description: Implements classification and regression using decision trees
     with a greedy CART algorithm. Provides methods for bagging and random forest
@@ -28,4 +28,5 @@ VignetteBuilder: knitr
 RoxygenNote: 7.3.2
 Config/testthat/edition: 3
 License: MIT + file LICENSE
+Encoding: UTF-8
 LazyData: true
