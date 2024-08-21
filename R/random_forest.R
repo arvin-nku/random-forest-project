@@ -491,23 +491,3 @@ random_forest <- function(x, y, data, type = NULL, B, A = NULL, m = 0,num_leaf =
     stop("Invalid type: The type must be reg for regression or cla for classification")
   }
 }
-
-X1 <- runif(100, 0, 1)
-X2 <- runif(100, 0, 1)
-e <- rnorm(100, 0, 0.1)
-Y <- X1^2 + X2+ e
-data_reg <- tibble(a = X1, b = X2, y = Y)
-random_forest(x = c(a, b), y = Y, data = data_reg, type = "reg", B = 10, A = 20, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1)
-
-X1 <- runif(100, 0, 1)
-X2 <- runif(100, 0, 1)
-e <- rnorm(100, 0, 0.1)
-inear_comb <- 1.8 * X1 + 0.3 * X2 + e
-Y <- ifelse(linear_comb > 1, 1, 2)
-data <- list(x = matrix(c(X1, X2), nrow = 2, byrow = TRUE), y = Y)
-random_forest_classification(data, B = 5, A = 10, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
-
-
-
-
-
