@@ -253,16 +253,15 @@ server <- function(input, output) {
            
            "bagging" = {
              if (type == "reg") {
-               data <- create_ran_sample_reg(seed, size)
-               data_bagging <- bagging_regression(data$x, data$y, B)
-               output$plot <- renderGrViz({
-                 tree_plot_random_forest(data_bagging[[tree_num]])
+               
+               output$prediction <- renderText({
+                 paste("The Make Plot of a tree function only works for Greedy CART and Random Forest. To illustrate bagging, use Show test for bagging")
                })
+               
              } else if (type == "cla") {
-               data <- create_ran_sample_cla(seed, size)
-               data_bagging <- bagging_classification(data$x, data$y, B)
-               output$plot <- renderGrViz({
-                 tree_plot_random_forest(data_bagging[[tree_num]])
+               
+               output$prediction <- renderText({
+                 paste("The Make Plot of a tree function only works for Greedy CART and Random Forest. To illustrate bagging, use Show test for bagging")
                })
              }
            },
