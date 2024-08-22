@@ -59,6 +59,7 @@ An environment containing the elements `dim`, `values`, and `tree`.
 Greedy algorithm for either regression or classification data.
 }
 \examples{
+library(tibble)
 X <- runif(100,0,1)
 e <- rnorm(100,0,0.2)
 Y <- sin(2*pi*X) + e
@@ -82,8 +83,11 @@ g <- function(x,y,e){
   }
   Y
 }
-tbl <- tibble(x1 = X1, x2 = X2, y = g(X1,X2,e))
-val <- greedy_cart(x = c(x1,x2), y = y, data = tbl, type = "class", depth = 3)
-val$values
-val$tree
+
+if (requireNamespace("tibble", quietly = TRUE)) {
+  tbl <- tibble::tibble(x1 = X1, x2 = X2, y = g(X1,X2,e))
+  val <- greedy_cart(x = c(x1, x2), y = y, data = tbl, type = "class", depth = 3)
+  val$values
+  val$tree
+}
 }

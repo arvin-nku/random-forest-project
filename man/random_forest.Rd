@@ -63,6 +63,7 @@ a list of `B` trees
 Random Forest Algorithm for either regression or classification
 }
 \examples{
+library(tibble)
 X1 <- runif(100, 0, 1)
 X2 <- runif(100, 0, 1)
 e <- rnorm(100, 0, 0.1)
@@ -76,5 +77,5 @@ e <- rnorm(100, 0, 0.1)
 linear_comb <- 1.8 * X1 + 0.3 * X2 + e
 Y <- ifelse(linear_comb > 1, 1, 2)
 data_cla <- list(a = X1, b= X2, y = Y)
-random_forest( x = c(a, b), y = Y, data = data_cla, type = "cla", B = 5, A = 10, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+random_forest( x = c(a, b), y = Y, data = data_cla, type = "cla", B = 5, A = 10, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = FALSE)
 }

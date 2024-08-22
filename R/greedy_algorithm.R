@@ -1,12 +1,13 @@
-# Used libraries
-library(tibble)
-library(rlang)
-library(dplyr)
-
 #' Find Leaf Nodes
 #'
 #' Helper function to identify leaf nodes in a decision tree.
 #' The function filters the nodes where `name` is "leaf" and returns the corresponding node identifiers.
+#' 
+#' @importFrom rlang enexpr enquo
+#' @importFrom dplyr filter mutate add_row bind_cols %>%
+#' @importFrom tibble as_tibble tibble as_tibble_col
+#' @importFrom stats optimize
+#' @importFrom utils tail
 #' 
 #' @param tree A tibble representing the decision tree.
 #' @return A vector of node identifiers corresponding to leaf nodes.
@@ -21,6 +22,12 @@ find_leaf1 <- function(tree){
 #'
 #' Greedy algorithm for regression data.
 #' This function builds a regression tree using a greedy algorithm based on minimizing squared error.
+#'
+#' @importFrom rlang enexpr enquo
+#' @importFrom dplyr filter mutate add_row bind_cols %>%
+#' @importFrom tibble as_tibble tibble as_tibble_col
+#' @importFrom stats optimize
+#' @importFrom utils tail
 #'
 #' @param data A named list containing regression data. The x values have the name `x` and are in the form of a matrix where the row number gives the dimension of the data. The y values have the name `y` and are in the form of a vector.
 #' @param num_leaf Condition to end: the tree has `num_leaf` leaves. Must be greater than or equal to 1. The default value is the maximum number of leaves (the number of data points).
@@ -266,6 +273,12 @@ greedy_cart_regression <- function(data, num_leaf = NULL, depth = NULL, num_spli
 #' Greedy Algorithm (Classification)
 #'
 #' Greedy algorithm for classification data.
+#' 
+#' @importFrom rlang enexpr enquo
+#' @importFrom dplyr filter mutate add_row bind_cols 
+#' @importFrom tibble as_tibble tibble as_tibble_col
+#' @importFrom stats optimize
+#' @importFrom utils tail
 #'
 #' @param data A named list containing classification data. The x values have the name `x` and are in the form of a matrix where the row number gives the dimension of the data. The y values have the name `y` and are in the form of a vector.
 #' @param num_leaf Condition to end: the tree has `num_leaf` leaves. Must be greater than or equal to 1. The default value is the maximum number of leaves (the number of data points).
@@ -545,6 +558,13 @@ greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_
 #'
 #' Greedy algorithm for either regression or classification data.
 #'
+#' @importFrom rlang eval_tidy
+#' @importFrom rlang enexpr enquo
+#' @importFrom dplyr filter mutate add_row bind_cols
+#' @importFrom tibble as_tibble tibble as_tibble_col
+#' @importFrom stats optimize
+#' @importFrom utils tail
+#' 
 #' @param x Column/list name(s) of the x value(s).
 #' @param y Column/list name of the y value.
 #' @param data Tibble or named list with data.
@@ -574,6 +594,7 @@ greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_
 #' @export
 #' 
 #' @examples
+#' library(tibble)
 #' X <- runif(100,0,1)
 #' e <- rnorm(100,0,0.2)
 #' Y <- sin(2*pi*X) + e
@@ -597,10 +618,13 @@ greedy_cart_classification <- function(data, num_leaf = NULL, depth = NULL, num_
 #'   }
 #'   Y
 #' }
-#' tbl <- tibble(x1 = X1, x2 = X2, y = g(X1,X2,e))
-#' val <- greedy_cart(x = c(x1,x2), y = y, data = tbl, type = "class", depth = 3)
-#' val$values
-#' val$tree
+#' 
+#' if (requireNamespace("tibble", quietly = TRUE)) {
+#'   tbl <- tibble::tibble(x1 = X1, x2 = X2, y = g(X1,X2,e))
+#'   val <- greedy_cart(x = c(x1, x2), y = y, data = tbl, type = "class", depth = 3)
+#'   val$values
+#'   val$tree
+#' }
 
 greedy_cart <- function(x, y, data, type = NULL, num_leaf = NULL ,depth = NULL, num_split = 2, min_num = 1, m = 0, unique = FALSE){
   x1 <- enexpr(x)

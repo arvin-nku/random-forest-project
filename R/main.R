@@ -1,8 +1,6 @@
-library(dplyr)
-library(rlang)
-
-
 #' Prediction of datapoint or a set of data points in a tree or a set of trees
+#'
+#' @importFrom utils tail
 #'
 #' @param list_tree a list containing an arbitrary number greater or equal to 1 of trees in tibble form\cr 
 #' as used by `greedy_cart()`, `bagging()` or `random_forest()`

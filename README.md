@@ -7,7 +7,7 @@ This repository contains the implementation of various algorithms related to Ran
 ## Project Structure
 - **data/**: Example data used for implementation and testing.
 - **docs/**: Documentation, including vignettes and final presentation.
-- **src/**: Source code for various algorithms and Shiny app.
+- **R/**: Source code for various algorithms and Shiny app.
 - **tests/**: Test cases for the project.
 
 ## Installation

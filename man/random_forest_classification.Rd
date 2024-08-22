@@ -13,7 +13,7 @@ random_forest_classification(
   depth = NULL,
   num_split = 2,
   min_num = 1,
-  unique = F
+  unique = FALSE
 )
 }
 \arguments{
@@ -61,5 +61,5 @@ e <- rnorm(100, 0, 0.1)
 linear_comb <- 1.8 * X1 + 0.3 * X2 + e
 Y <- ifelse(linear_comb > 1, 1, 2)
 data <- list(x = matrix(c(X1, X2), nrow = 2, byrow = TRUE), y = Y)
-random_forest_classification(data, B = 5, A = 10, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = F)
+random_forest_classification(data, B = 5, A = 10, m = 1, num_leaf = 10, depth = NULL, num_split = 2, min_num = 1, unique = FALSE)
 }

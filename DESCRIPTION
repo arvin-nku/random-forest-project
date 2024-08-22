@@ -19,10 +19,12 @@ Imports:
   tidyr,
   tibble,
   rlang,
-  ggplot2
+  ggplot2,
+  DiagrammeR
 Suggests: 
   knitr,
   rmarkdown,
+  data.tree,
   testthat (>= 3.0.0)
 VignetteBuilder: knitr
 RoxygenNote: 7.3.2
